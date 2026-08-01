@@ -164,6 +164,7 @@ class DatasetProfile(BaseModel):
     column_count: int
     columns: list[ColumnProfile]
     warnings: list[str] = Field(default_factory=list)
+    sampled: bool = False
 
 
 class AnalysisRequest(BaseModel):

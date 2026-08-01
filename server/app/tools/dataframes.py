@@ -3,34 +3,90 @@ from typing import Any
 
 import pandas as pd
 
+from app.core.settings import get_settings
 from app.models.schemas import ColumnProfile, DatasetProfile, DatasetRecord
 
 
 SUPPORTED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
 MAX_PROFILE_VALUE_CHARS = 200
+_PROFILE_CACHE_VERSION = "v1"
+_profile_cache: dict[tuple[Any, ...], dict[str, Any]] = {}
+
+
+def clear_profile_cache() -> None:
+    """Clear the in-memory dataset profile cache (used by tests/ops)."""
+    _profile_cache.clear()
+
+
+def _file_fingerprint(path: Path) -> tuple[Any, ...] | None:
+    try:
+        stat = path.stat()
+        return (
+            str(path.resolve()),
+            stat.st_size,
+            stat.st_mtime_ns,
+            _PROFILE_CACHE_VERSION,
+        )
+    except OSError:
+        return None
 
 
 def profile_dataset(dataset: DatasetRecord, max_sample_values: int = 5) -> DatasetProfile:
-    frame, warnings = load_dataframe(dataset.path)
+    key = _file_fingerprint(dataset.path)
+    if key is not None and key in _profile_cache:
+        cached = _profile_cache[key]
+        return DatasetProfile(
+            dataset_id=dataset.id,
+            filename=dataset.filename,
+            row_count=cached["row_count"],
+            column_count=cached["column_count"],
+            columns=cached["columns"],
+            warnings=cached["warnings"],
+            sampled=cached["sampled"],
+        )
+
+    frame, warnings, sampled = load_dataframe(dataset.path)
     columns = [
         profile_column(name, frame[name], max_sample_values=max_sample_values)
         for name in frame.columns
     ]
-    return DatasetProfile(
+    profile = DatasetProfile(
         dataset_id=dataset.id,
         filename=dataset.filename,
-        row_count=int(len(frame)),
+        row_count=_full_row_count(dataset.path, frame, sampled),
         column_count=int(len(frame.columns)),
         columns=columns,
         warnings=warnings,
+        sampled=sampled,
     )
+    if key is not None:
+        _profile_cache[key] = {
+            "row_count": profile.row_count,
+            "column_count": profile.column_count,
+            "columns": profile.columns,
+            "warnings": profile.warnings,
+            "sampled": profile.sampled,
+        }
+    return profile
 
 
-def load_dataframe(path: Path) -> tuple[pd.DataFrame, list[str]]:
+def load_dataframe(path: Path) -> tuple[pd.DataFrame, list[str], bool]:
     suffix = path.suffix.lower()
     warnings: list[str] = []
+    sampled = False
+    settings = get_settings()
     if suffix == ".csv":
-        frame = pd.read_csv(path)
+        total_rows = _count_csv_data_rows(path)
+        threshold = settings.profile_sampling_threshold_rows
+        if total_rows is not None and total_rows > threshold:
+            frame = pd.read_csv(path, nrows=settings.profile_sampling_max_rows)
+            sampled = True
+            warnings.append(
+                f"数据集超过 {threshold} 行，画像基于前 "
+                f"{settings.profile_sampling_max_rows} 行采样。"
+            )
+        else:
+            frame = pd.read_csv(path)
     elif suffix in {".xlsx", ".xls"}:
         frame = pd.read_excel(path)
         warnings.append("Excel import currently reads the first sheet only.")
@@ -41,7 +97,35 @@ def load_dataframe(path: Path) -> tuple[pd.DataFrame, list[str]]:
         warnings.append("Dataset has no rows.")
     if len(frame.columns) == 0:
         warnings.append("Dataset has no columns.")
-    return frame, warnings
+    return frame, warnings, sampled
+
+
+def _count_csv_data_rows(path: Path) -> int | None:
+    """Count CSV data rows without materializing the frame.
+
+    Uses DuckDB's streaming CSV reader; falls back to None (no sampling) if the
+    file cannot be read that way.
+    """
+    try:
+        import duckdb
+
+        with duckdb.connect() as conn:
+            row = conn.execute(
+                "select count(*) from read_csv_auto(?, header=true, sample_size=-1)",
+                [str(path)],
+            ).fetchone()
+        return int(row[0]) if row else None
+    except Exception:
+        return None
+
+
+def _full_row_count(path: Path, frame: pd.DataFrame, sampled: bool) -> int:
+    if not sampled:
+        return int(len(frame))
+    count = _count_csv_data_rows(path)
+    if count is not None:
+        return count
+    return int(len(frame))
 
 
 def profile_column(name: str, series: pd.Series, max_sample_values: int) -> ColumnProfile:

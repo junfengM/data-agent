@@ -4,7 +4,6 @@ import {
   BarChart3,
   ChevronDown,
   Download,
-  ExternalLink,
   FileCode,
   Image,
   Link2,
@@ -28,6 +27,7 @@ import type {
 import { apiFetch, resolveApiUrl } from "../apiClient";
 import { fetchRuns } from "../api/runs";
 import { buildChartData, buildHeatmapRawData } from "../utils/chartAdapters";
+import { downloadBlob, safeFilename } from "../utils/download";
 import { humanizeReportLabel, prepareReportBlocks } from "../utils/reportLayout";
 import { COLORS, RechartsRenderer } from "./RechartsRenderer";
 import {
@@ -45,6 +45,12 @@ import {
   WorkflowList,
 } from "../shared";
 import { ArtifactEvidenceDetails } from "./ArtifactEvidenceDetails";
+import { FileChartPreview } from "./FileChartPreview";
+import {
+  WebReportPreviewWidget,
+  isWebReportArtifact,
+  webReportAssetUrl,
+} from "./WebReportPreview";
 import {
   VisualAdaptiveStory,
   VisualComparisonGrid,
@@ -65,6 +71,13 @@ import {
   VisualTrendPanel,
 } from "./VisualReportBlocks";
 import "./artifact-layout.css";
+
+export { FileChartPreview } from "./FileChartPreview";
+export {
+  WebReportPreviewWidget,
+  isWebReportArtifact,
+  webReportAssetUrl,
+} from "./WebReportPreview";
 
 type ArtifactsProps = {
   activeArtifact?: Artifact;
@@ -483,28 +496,6 @@ function InlineTable({ title, subtitle, source, columns, rows, block, item, sour
   );
 }
 
-function FileChartPreview({ path, runId, title }: { path: string; runId?: string; title: string }) {
-  const filename = path.split(/[\\/]/).pop() || "";
-  const extension = filename.split(".").pop()?.toLowerCase() || "";
-  const assetUrl = runId && filename ? resolveApiUrl(`/api/runs/${runId}/assets/${encodeURIComponent(filename)}`) : "";
-
-  if (assetUrl && ["png", "jpg", "jpeg", "svg"].includes(extension)) {
-    return <figure className="chart-file-preview"><img alt={title} loading="lazy" src={assetUrl} /><figcaption>{filename}</figcaption></figure>;
-  }
-  if (assetUrl && extension === "html") {
-    return (
-      <figure className="chart-file-preview chart-file-preview--html">
-        <iframe loading="lazy" referrerPolicy="no-referrer" sandbox="allow-scripts" src={assetUrl} title={title} />
-        <a className="chart-original-link" href={assetUrl} rel="noreferrer" target="_blank" title="打开原始交互图表">
-          <ExternalLink size={14} />
-          <span>原始图表</span>
-        </a>
-      </figure>
-    );
-  }
-  return <div className="chart-file-preview chart-file-preview--fallback"><p>图表文件暂时无法预览。</p>{filename ? <code>{filename}</code> : null}</div>;
-}
-
 function TableWidget({ artifact }: { artifact: Artifact }) {
   const tableData = asTableData(artifact.data);
   return <article className="artifact-widget"><WidgetHeader artifact={artifact} />{tableData ? <InlineTable columns={tableData.columns.map((c) => ({ field: c.key, label: c.label }))} rows={tableData.rows} /> : <pre>{artifact.content}</pre>}</article>;
@@ -539,58 +530,6 @@ function FileArtifactWidget({ artifact, runId }: { artifact: Artifact; runId?: s
   }
 
   return <article className="artifact-widget"><WidgetHeader artifact={artifact} /><div className="file-artifact">{artifact.path}</div></article>;
-}
-
-export function isWebReportArtifact(artifact: Pick<Artifact, "title" | "type" | "data">) {
-  return artifact.title === "网页版报告"
-    || artifact.data?.renderer === "delivery_renderer_v0"
-    || artifact.data?.renderer === "quarto_html"
-    || (artifact.type === "html_report" && artifact.data?.renderer === "quarto_html");
-}
-
-export function webReportAssetUrl(artifact: Pick<Artifact, "path">, runId?: string) {
-  const filename = artifact.path ? artifact.path.split(/[\\/]/).pop() || "" : "";
-  return runId && filename ? resolveApiUrl(`/api/runs/${runId}/assets/${encodeURIComponent(filename)}`) : "";
-}
-
-function WebReportPreviewWidget({ artifact, runId }: { artifact: Artifact; runId: string }) {
-  const assetUrl = webReportAssetUrl(artifact, runId);
-
-  async function handleDownloadHtml() {
-    if (!assetUrl) return;
-    try {
-      const response = await apiFetch(assetUrl);
-      if (!response.ok) throw new Error("下载失败");
-      const blob = await response.blob();
-      downloadBlob(blob, `${safeFilename(artifact.title || "web-report")}.html`);
-    } catch (error) {
-      alert(error instanceof Error ? error.message : "下载 HTML 失败");
-    }
-  }
-
-  if (!assetUrl) {
-    return <article className="artifact-widget"><WidgetHeader artifact={artifact} /><EmptyState text="网页版报告缺少可预览的 HTML 文件。" /></article>;
-  }
-
-  return (
-    <article className="artifact-widget web-report-widget">
-      <div className="report-actionbar web-report-actionbar">
-        <WidgetHeader artifact={artifact} />
-        <button className="ghost-button export-button" onClick={handleDownloadHtml} type="button">
-          <FileCode size={16} /> 下载 HTML
-        </button>
-      </div>
-      <div className="web-report-preview-shell">
-        <iframe
-          className="web-report-preview-frame"
-          loading="lazy"
-          sandbox="allow-scripts"
-          src={assetUrl}
-          title={artifact.title || "网页版报告"}
-        />
-      </div>
-    </article>
-  );
 }
 
 function ManifestFooter({ sources, evidenceMap }: { sources: Array<Record<string, unknown>>; evidenceMap: Array<Record<string, unknown>> }) {
@@ -659,7 +598,5 @@ function columnClass(column: ReportColumn, rows: Array<Record<string, unknown>>)
 }
 function toColumnList(value: unknown): ReportColumn[] { if (!Array.isArray(value)) return []; return value.filter(isRecord).map((column) => { const field = String(column.field ?? column.key ?? ""); const rawLabel = String(column.label ?? field); return { field, label: rawLabel === field ? humanizeReportLabel(rawLabel) : rawLabel, align: column.align ? String(column.align) : undefined, format: column.format ? String(column.format) : undefined, type: column.type ? String(column.type) : undefined, unit: column.unit ? String(column.unit) : undefined }; }).filter((column) => column.field); }
 function toStringList(value: unknown): string[] { return Array.isArray(value) ? value.map(String).filter(Boolean) : []; }
-function downloadBlob(blob: Blob, filename: string) { const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url); }
-function safeFilename(name: string): string { return (name || "report").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, "-").slice(0, 90) || "report"; }
 function createStandaloneHtml(node: HTMLElement, title: string): string { const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map((link) => (link as HTMLLinkElement).outerHTML).join("\n"); const inlineStyles = Array.from(document.querySelectorAll("style")).map((style) => style.outerHTML).join("\n"); return ["<!doctype html>", '<html lang="zh-CN">', "<head>", '<meta charset="utf-8">', '<meta name="viewport" content="width=device-width, initial-scale=1">', `<title>${escapeHtml(title)}</title>`, styleLinks, inlineStyles, "</head>", '<body class="artifact-export-page">', node.outerHTML, "</body>", "</html>"].join("\n"); }
 function escapeHtml(value: string): string { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }

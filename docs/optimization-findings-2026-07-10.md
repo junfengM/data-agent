@@ -46,8 +46,10 @@
 - **DA-OPT-005 — Partial**：新增 `analysis_max_total_output_bytes` 总输出发现上限；子进程应用 POSIX rlimit（CPU、文件大小、FD 数、地址空间、进程数）；运行后文件清理与真正沙箱后端仍未实现。
 - **DA-OPT-009 — Fixed**：Web Report iframe 移除 `allow-same-origin`（`sandbox="allow-scripts"`），同源 DOM/存储不再可被生成 HTML 访问；“导出为图片”改为“下载 HTML”；文件图表 iframe 保持 `allow-scripts`；资产端点 CSP 维持 `connect-src 'none'`。
 - **DA-OPT-010 — Partial**：`GET /api/runs` 支持 `limit`/`offset` 分页；新增 `DELETE /api/runs/{run_id}`（运行中任务返回 409，删除数据库行、事件与 artifacts 目录）；SQLite 启用 WAL 与 busy_timeout。正式 migration 机制、运行摘要列、UI 删除入口、FK 强制（需级联设计）仍待实现。
+- **DA-OPT-012 — Partial**：CSV 超过 `profile_sampling_threshold_rows`（默认 20 万行）时改用采样画像（前 `profile_sampling_max_rows` 行），行数用 DuckDB 流式统计；按文件指纹（路径+大小+mtime+版本）缓存画像，重复运行不再重扫。Excel 工作表选择、DuckDB 全链路分块、近似 distinct、性能基准仍待实现。
+- **DA-OPT-014 — Partial**：从 `ArtifactModule.tsx` 拆分出 `WebReportPreview.tsx`、`FileChartPreview.tsx`、`utils/download.ts`，保留兼容再导出；ArtifactModule 主体拆分、重型渲染器动态导入与按需加载仍待实现。
 
-其余条目（DA-OPT-012、014）保持 Open。
+优化条目已全部处理（部分完成项见上）。
 
 ## DA-OPT-001 — 同步子进程阻塞异步服务，缺少可靠取消
 

@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     analysis_max_output_bytes: int = 200 * 1024 * 1024
     analysis_max_total_output_bytes: int = 1024 * 1024 * 1024
 
+    # Dataset profiling: sample large CSVs instead of full in-memory scans.
+    profile_sampling_threshold_rows: int = 200_000
+    profile_sampling_max_rows: int = 100_000
+
     model_config = SettingsConfigDict(env_prefix="DATA_AGENT_", env_file=".env", extra="ignore")
 
     @field_validator("config_dir", "workspace_dir", "skills_dir", "sqlite_path", "templates_dir",

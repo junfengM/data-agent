@@ -53,8 +53,27 @@ describe("web report isolation", () => {
       resolve(__dirname, "../src/components/ArtifactModule.tsx"),
       "utf8",
     );
+    const preview = readFileSync(
+      resolve(__dirname, "../src/components/WebReportPreview.tsx"),
+      "utf8",
+    );
     expect(module).not.toContain('sandbox="allow-scripts allow-same-origin"');
-    expect(module).toContain("下载 HTML");
+    expect(preview).toContain('sandbox="allow-scripts"');
+    expect(preview).not.toContain("allow-same-origin");
+    expect(preview).toContain("下载 HTML");
+  });
+});
+
+describe("artifact module split", () => {
+  it("moves web report and file chart previews into focused modules", () => {
+    const module = readFileSync(
+      resolve(__dirname, "../src/components/ArtifactModule.tsx"),
+      "utf8",
+    );
+    expect(module).not.toContain("function WebReportPreviewWidget");
+    expect(module).not.toContain("function FileChartPreview");
+    expect(module).toContain('from "./WebReportPreview"');
+    expect(module).toContain('from "./FileChartPreview"');
   });
 });
 
