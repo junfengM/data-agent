@@ -214,7 +214,7 @@ def inspect_semantic_layer(project_id: str, layer_id: str) -> dict[str, object]:
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
     layers = store.list_semantic_layers(project_id)
-    layer = next((l for l in layers if l["id"] == layer_id), None)
+    layer = next((item for item in layers if item["id"] == layer_id), None)
     if not layer:
         raise HTTPException(status_code=404, detail="Layer not found")
     from app.tools.preflight import load_semantic_layer

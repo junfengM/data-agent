@@ -7,7 +7,6 @@ planner executions without leaking full LLM content or secrets.
 from __future__ import annotations
 
 import hashlib
-import json
 import re
 from typing import Any
 
@@ -133,7 +132,6 @@ def summarize_context_budget(
 ) -> dict[str, Any]:
     """Summarize context budget from messages and tool results."""
     msgs = messages or []
-    results = tool_results or []
 
     system_chars = 0
     user_chars = 0

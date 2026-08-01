@@ -44,35 +44,28 @@ from app.agent.visual_report_planner import (
     merge_visual_blocks_into_reading_flow,
 )
 from app.tools.chart_contract import normalize_chart_specs
-from app.tools.evidence_linking import link_evidence, link_evidence_with_explanations
+from app.tools.evidence_linking import link_evidence_with_explanations
 
 # Re-export from sub-modules for backward compatibility
 from app.agent.artifact_manifest_helpers import (
     _asset_path_for_package,
     _looks_like_directory_section,
     _normalize_markdown_heading,
-    _tokenize,
-    content_matches_name,
 )
 from app.agent.artifact_manifest_charts import (
-    _chart_required_fields,
     _chart_score,
     _chart_spec_for,
-    _direct_rows,
     _find_rows_for_chart,
     _merge_chart_info_and_spec,
     _promote_native_chart_if_possible,
-    _rows_have_fields,
     infer_chart_encodings,
     normalize_chart_type,
 )
 from app.agent.artifact_manifest_tables import _table_score
 from app.agent.artifact_manifest_semantics import (
     _build_metric_cards,
-    detect_semantic_conflicts,
     link_angles_to_items,
 )
-from app.agent.artifact_manifest_blocks import build_report_blocks
 
 
 def build_artifact_manifest(
@@ -507,7 +500,7 @@ def draft_fallback_report(
         "",
         "## 一、运行状态",
         "",
-        f"- Planner synthesis: 未完成/降级",
+        "- Planner synthesis: 未完成/降级",
         f"- 证据生成: {'已完成' if successful else '部分完成'}",
         f"- 成功步骤: {len(successful)}",
         f"- 失败步骤: {len(failed)}",

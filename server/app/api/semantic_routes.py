@@ -22,7 +22,6 @@ from app.tools.semantic_inference import (
     validate_semantic_draft,
 )
 from app.tools.semantic_validation import (
-    SemanticMergePreview,
     precheck_semantic_layer_merge,
 )
 

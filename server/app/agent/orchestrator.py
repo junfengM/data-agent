@@ -17,7 +17,6 @@ from app.agent.run_lifecycle import (
 )
 from app.agent.semantic_finding_service import create_save_finding
 from app.agent.skills import SkillRegistry
-from app.agent.templates import TemplateRegistry
 from app.agent.visual_adaptation import learn_visual_recipes
 from app.core.model_config import ModelConfigRegistry
 from app.core.settings import Settings
@@ -38,9 +37,8 @@ from app.tools.preflight import (
     load_semantic_layer, load_source_category_config, preflight_to_markdown,
     select_active_layer,
 )
-from app.agent.artifact_manifest import (
-    build_report_blocks, draft_fallback_report,
-)
+from app.agent.artifact_manifest import draft_fallback_report
+from app.agent.artifact_manifest_blocks import build_report_blocks
 from app.agent.semantic_findings import enforce_angle_boundaries
 from app.agent.visual_report_assembly import assemble_visual_report
 from app.agent.run_validation import run_and_apply_validation
@@ -363,7 +361,6 @@ class AgentOrchestrator:
         _step_results: list[dict] = []
         plan_caveats: list[str] = []
         next_checks: list[str] = []
-        skill_content = ""
         selected_skill_ids: list[str] = []
         candidate_angles: list[CandidateAngle] = []
         visual_plan: list[dict[str, Any]] = []
@@ -486,14 +483,6 @@ class AgentOrchestrator:
                     status="completed",
                 )
             )
-
-            if selected_skill_ids:
-                skill_content = self.skill_registry.load_skill_content(selected_skill_ids[0]) or ""
-
-            report_template: str | None = None
-            if self.templates_dir and self.templates_dir.exists():
-                template_registry = TemplateRegistry(self.templates_dir)
-                report_template = template_registry.template_for_skill(selected_skill_ids[0])
 
             complete_step(run, "analysis", f"LLM \u8ba1\u5212: {plan_summary}")
             complete_step(run, "diagnosis", "LLM \u81ea\u4e3b\u6267\u884c\u5206\u6790\u6b65\u9aa4\u3002")

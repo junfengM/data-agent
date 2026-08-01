@@ -272,7 +272,6 @@ def evidence_is_integrated_in_report_md(
     chart_specs: list[dict[str, Any]] | None = None,
     blocks: list[dict] | None = None,
 ) -> bool:
-    normalized_report = normalize_evidence_text(report_md)
     chart_specs = chart_specs or []
     evidence_type = evidence.get("type")
 

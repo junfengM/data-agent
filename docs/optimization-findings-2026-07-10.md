@@ -41,7 +41,7 @@
 - **DA-OPT-008 — Fixed**：模型/认证类失败且无分析证据时，Run 直接标记 `failed` 并停止产物生成；已有证据时仍走自动恢复报告。
 - **DA-OPT-011 — Fixed（默认安全）**：Prompt 快照默认不再持久化，需显式设置 `DATA_AGENT_TRACE_PERSIST_PROMPT_SNAPSHOTS=true`。
 - **DA-OPT-006 — Partial**：新增 `planner_max_code_executions` 执行预算，达到上限后移除 `execute_code`/`save_semantic_finding`；Token/费用/时间总预算仍待实现。
-- **DA-OPT-013 — Partial**：Web CI 固定 Bun 版本，新增 Desktop CI（构建、测试、`npm audit`）；Ruff/mypy 门禁与工具链固定仍待实现。
+- **DA-OPT-013 — Partial**：Web CI 固定 Bun 1.3.12；Desktop CI（构建、测试、`npm audit`）；Server CI 增加 `ruff check app` 与 `mypy app` 门禁，固定 uv 0.12.1；新增 macOS DMG 打包烟测工作流（手动触发 + 每周定时）。剩余：main 分支保护 required checks（需仓库设置）、代表性报告截图回归。
 - **DA-OPT-001 — Partial**：分析代码执行改为异步子进程（`run_analysis_code_async`），子进程独立进程组，超时/取消会终止整个进程组；新增 `POST /api/runs/{run_id}/cancel` 与前端“取消”按钮；SSE 断开取消会同步终止分析子进程。Quarto 渲染已改为 `asyncio.to_thread` 避免阻塞事件循环，但 Quarto 子进程级取消尚未覆盖。
 - **DA-OPT-005 — Partial**：新增 `analysis_max_total_output_bytes` 总输出发现上限；子进程应用 POSIX rlimit（CPU、文件大小、FD 数、地址空间、进程数）；运行后文件清理与真正沙箱后端仍未实现。
 - **DA-OPT-009 — Fixed**：Web Report iframe 移除 `allow-same-origin`（`sandbox="allow-scripts"`），同源 DOM/存储不再可被生成 HTML 访问；“导出为图片”改为“下载 HTML”；文件图表 iframe 保持 `allow-scripts`；资产端点 CSP 维持 `connect-src 'none'`。

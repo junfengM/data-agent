@@ -5,7 +5,7 @@ from typing import Any
 
 from app.tools.semantic_validation import validate_semantic_ambiguity
 from app.tools.validation_types import ValidationResult
-from app.agent.visual_deck_blocks import VISUAL_BLOCK_TYPES
+from app.agent.visual_deck_constants import VISUAL_BLOCK_TYPES
 from app.agent.trace_diagnostics import check_report_sanity, count_report_features
 from app.models.schemas import BLOCK_ORIGINS, RENDERER_TARGETS
 

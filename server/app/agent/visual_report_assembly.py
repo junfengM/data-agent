@@ -10,12 +10,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from app.agent.artifact_manifest import build_artifact_manifest, detect_semantic_conflicts
-from app.agent.visual_adaptation import learn_visual_recipes, load_visual_recipes
-from app.agent.visual_deck_blocks import (
+from app.agent.artifact_manifest import build_artifact_manifest
+from app.agent.artifact_manifest_semantics import detect_semantic_conflicts
+from app.agent.visual_adaptation import load_visual_recipes
+from app.agent.visual_deck_blocks import audit_visual_coverage, build_visual_deck_blocks
+from app.agent.visual_deck_evidence import (
     attach_stable_source_ids,
-    audit_visual_coverage,
-    build_visual_deck_blocks,
     dedupe_appendix_visual_evidence,
 )
 from app.agent.visual_report_planner import compose_reading_flow

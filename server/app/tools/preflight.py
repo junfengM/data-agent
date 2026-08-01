@@ -200,7 +200,7 @@ def select_active_layer(layers: list[dict[str, Any]]) -> dict[str, Any] | None:
     if active:
         return active
     # Sort by created_at descending when no explicit is_active flag
-    return sorted(layers, key=lambda l: l.get("created_at", ""), reverse=True)[0]
+    return sorted(layers, key=lambda layer: layer.get("created_at", ""), reverse=True)[0]
 
 
 def build_preflight_envelope(

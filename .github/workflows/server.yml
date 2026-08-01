@@ -30,6 +30,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
+          version: "0.12.1"
           enable-cache: true
 
       - name: Set up Python
@@ -40,3 +41,9 @@ jobs:
 
       - name: Run tests
         run: ../scripts/test-server
+
+      - name: Lint
+        run: uv run ruff check app
+
+      - name: Type check
+        run: uv run mypy app

@@ -1,6 +1,6 @@
 import pytest
 
-from app.agent.artifact_manifest import build_report_blocks
+from app.agent.artifact_manifest_blocks import build_report_blocks
 from app.models.schemas import ColumnProfile, DatasetProfile, ProjectContext, ReportBlockType
 
 

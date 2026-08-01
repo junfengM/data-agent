@@ -42,7 +42,8 @@ Recorded baseline: server `787` tests, web `51`, desktop `8`.
 - New chart/report block types need a reviewed renderer before the LLM can
   select them — no arbitrary runtime HTML/CSS/React.
 - Add a regression test with every bug fix.
-- Run `ruff check app` before submitting backend changes.
+- Run `cd server && uv run ruff check app && uv run mypy app` before submitting
+  backend changes (these are CI gates).
 
 ## Branching and commits
 

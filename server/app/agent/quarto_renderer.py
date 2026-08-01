@@ -16,7 +16,6 @@ import re
 import shutil
 import subprocess
 import tempfile
-import time
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +23,6 @@ import yaml
 
 from app.agent.quarto_runtime import find_quarto_runtime
 from app.agent.quarto_styles import get_quarto_css
-from app.core.settings import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +213,7 @@ def _convert_kpi_tables(md: str) -> str:
             except ValueError:
                 pass
 
-            card_lines = [f':::{{.kpi-card}}']
+            card_lines = [':::{.kpi-card}']
             card_lines.append(f'**{label}**')
             card_lines.append(f'{value}')
             if extra:
@@ -708,6 +706,5 @@ def render_quarto_report(
                 shutil.rmtree(work_dir)
             except Exception:
                 pass
-
 
 

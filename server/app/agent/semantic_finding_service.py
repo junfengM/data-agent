@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -69,7 +68,7 @@ def create_save_finding(
         if not layer_path.exists():
             layer_path.write_text("metrics: []\ndimensions: []\ncaveats: []\n", encoding="utf-8")
             existing_layers = store.list_semantic_layers(project_id)
-            if not any(l.get("path") == str(layer_path) for l in existing_layers):
+            if not any(layer.get("path") == str(layer_path) for layer in existing_layers):
                 created = store.create_semantic_layer({
                     "project_id": project_id,
                     "name": "Discovered Metrics",

@@ -43,3 +43,41 @@ asyncio_mode = "auto"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+warn_unused_ignores = false
+check_untyped_defs = false
+disable_error_code = ["import-untyped"]
+
+# Legacy dynamic modules are exempt from strict type checking while the
+# codebase migrates incrementally; every other module is checked. Shrink this
+# list over time instead of growing it.
+[[tool.mypy.overrides]]
+module = [
+  "app.agent.artifact_manifest",
+  "app.agent.artifact_manifest_blocks",
+  "app.agent.orchestrator",
+  "app.agent.planner",
+  "app.agent.quarto_renderer",
+  "app.agent.quarto_runtime",
+  "app.agent.run_artifacts",
+  "app.agent.run_validation",
+  "app.agent.semantic_finding_service",
+  "app.agent.visual_deck_blocks",
+  "app.agent.visual_deck_evidence",
+  "app.agent.visual_report_assembly",
+  "app.api.model_routes",
+  "app.api.run_routes",
+  "app.api.trace_routes",
+  "app.core.llm",
+  "app.memory.store",
+  "app.tools.execution",
+  "app.tools.preflight",
+  "app.tools.report_evidence",
+  "app.tools.semantic_inference",
+  "app.tools.semantic_validation",
+  "app.tools.validation",
+]
+ignore_errors = true

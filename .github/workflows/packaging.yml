@@ -1,0 +1,44 @@
+name: macOS Packaging Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly Monday 03:00 UTC — packaging regressions are caught periodically
+    # without blocking every push on a slow mac build.
+    - cron: "0 3 * * 1"
+
+jobs:
+  dmg:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: apps/desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.12
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web assets
+        run: bun run build:web
+
+      - name: TypeScript build
+        run: bun run build
+
+      - name: Package DMG
+        run: bun run dist:mac
+
+      - name: Verify artifacts
+        run: |
+          test -d release
+          find release -name "*.dmg" | grep -q .

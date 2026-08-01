@@ -6,19 +6,19 @@ SERVER_DIR = Path(__file__).resolve().parents[1]
 SERVER_ENV_FILE = SERVER_DIR / ("." + "env")
 load_dotenv(SERVER_ENV_FILE)
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
-from app.api.dataset_routes import router as dataset_router
-from app.api.model_routes import router as model_router
-from app.api.project_routes import router as project_router
-from app.api.run_routes import router as run_router
-from app.api.semantic_routes import router as semantic_router
-from app.api.skill_model_routes import router as skill_model_router
-from app.api.stream_routes import router as stream_router
-from app.api.system_routes import router as system_router
-from app.api.trace_routes import router as trace_router
-from app.core.settings import get_settings
+from app.api.dataset_routes import router as dataset_router  # noqa: E402
+from app.api.model_routes import router as model_router  # noqa: E402
+from app.api.project_routes import router as project_router  # noqa: E402
+from app.api.run_routes import router as run_router  # noqa: E402
+from app.api.semantic_routes import router as semantic_router  # noqa: E402
+from app.api.skill_model_routes import router as skill_model_router  # noqa: E402
+from app.api.stream_routes import router as stream_router  # noqa: E402
+from app.api.system_routes import router as system_router  # noqa: E402
+from app.api.trace_routes import router as trace_router  # noqa: E402
+from app.core.settings import get_settings  # noqa: E402
 
 
 def create_app() -> FastAPI:

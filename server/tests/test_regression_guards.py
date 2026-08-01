@@ -389,7 +389,7 @@ class TestComposeReadingFlowCharacterization:
 
 class TestSourceBindingNoFallback:
     def test_single_source_does_not_auto_bind_unmatched_chart(self):
-        from app.agent.visual_deck_blocks import attach_stable_source_ids
+        from app.agent.visual_deck_evidence import attach_stable_source_ids
         from app.models.schemas import (
             ManifestSource, SourceQuery, ManifestChart, ChartEncodings,
             EvidenceEntry,
@@ -430,7 +430,7 @@ class TestSourceBindingNoFallback:
         )
 
     def test_single_source_does_not_auto_bind_unmatched_table(self):
-        from app.agent.visual_deck_blocks import attach_stable_source_ids
+        from app.agent.visual_deck_evidence import attach_stable_source_ids
         from app.models.schemas import (
             ManifestSource, SourceQuery, ManifestTable, EvidenceEntry,
         )
@@ -469,7 +469,7 @@ class TestSourceBindingNoFallback:
         )
 
     def test_matching_source_binds_correctly(self):
-        from app.agent.visual_deck_blocks import attach_stable_source_ids
+        from app.agent.visual_deck_evidence import attach_stable_source_ids
         from app.models.schemas import (
             ManifestSource, SourceQuery, ManifestChart, ChartEncodings,
             EvidenceEntry,

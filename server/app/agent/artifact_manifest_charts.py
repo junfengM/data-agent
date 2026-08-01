@@ -2,7 +2,6 @@
 from typing import Any
 
 from app.models.schemas import ChartEncoding, ChartEncodings, ManifestChart
-from app.tools.chart_contract import FILE_CHART_TYPES
 from app.agent.artifact_manifest_helpers import _tokenize
 
 

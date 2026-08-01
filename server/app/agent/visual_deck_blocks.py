@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import re
 from copy import deepcopy
-from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
@@ -19,25 +18,14 @@ from app.agent.visual_template_catalog import VISUAL_TEMPLATES
 from app.agent.visual_deck_constants import (
     MAX_DECK_BLOCKS,
     MAX_TABLE_ROWS,
-    VISUAL_BLOCK_TYPES,
     _enum_value,
 )
 from app.agent.visual_deck_markdown import (
     MarkdownTable,
-    SECTION_RE,
-    CONTENT_SECTION_RE,
     split_sections,
     split_content_sections,
     parse_markdown_tables,
     _is_table_row,
-    _parse_table_block,
-    _split_table_row,
-)
-from app.agent.visual_deck_evidence import (
-    attach_stable_source_ids,
-    dedupe_appendix_visual_evidence,
-    _source_hints,
-    _match_source_id,
 )
 from app.models.schemas import ActionItem, ArtifactBlock, ArtifactBlockType
 from app.tools.text_utils import strip_inline_markdown
