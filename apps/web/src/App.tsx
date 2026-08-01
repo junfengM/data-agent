@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   Activity,
   BarChart3,
@@ -44,9 +44,16 @@ const modules: Array<{ id: ModuleId; label: string; icon: React.ElementType }> =
 export default function App() {
   const [activeModule, setActiveModule] = useState<ModuleId>("run");
   const [showSystemInfo, setShowSystemInfo] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [notice, setNotice] = useState<{ text: string; kind: "error" | "success" } | null>(null);
+  const noticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const onError = (msg: string) => setErrorMessage(msg);
+  function notify(text: string, kind: "error" | "success" = "error") {
+    if (noticeTimerRef.current) clearTimeout(noticeTimerRef.current);
+    setNotice({ text, kind });
+    noticeTimerRef.current = setTimeout(() => setNotice(null), 5000);
+  }
+
+  const onError = (msg: string) => notify(msg, "error");
 
   const projects = useProjects(onError);
   const models = useModels(onError);
@@ -63,9 +70,14 @@ export default function App() {
   async function createRun() {
     setActiveModule("run");
     try {
-      await runStream.createRun();
+      const result = await runStream.createRun();
+      if (result?.status === "completed") {
+        notify("分析完成，报告已生成。", "success");
+      } else if (result) {
+        notify(`分析结束（${result.status}），请查看运行日志。`, "error");
+      }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err));
+      notify(err instanceof Error ? err.message : String(err), "error");
     }
   }
 
@@ -75,7 +87,7 @@ export default function App() {
       runStream.setRun(historicalRun);
       setActiveModule("artifacts");
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : String(err));
+      notify(err instanceof Error ? err.message : String(err), "error");
     }
   }
 
@@ -141,31 +153,13 @@ export default function App() {
           </div>
         </header>
 
-        {errorMessage && (
+        {notice && (
           <div
-            style={{
-              backgroundColor: "#dc2626",
-              color: "white",
-              padding: "10px 16px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              borderRadius: 6,
-              marginBottom: 12,
-            }}
+            className={`app-notice app-notice--${notice.kind}`}
+            role={notice.kind === "error" ? "alert" : "status"}
           >
-            <span style={{ flex: 1 }}>{errorMessage}</span>
-            <button
-              onClick={() => setErrorMessage("")}
-              type="button"
-              style={{
-                background: "none",
-                border: "none",
-                color: "white",
-                cursor: "pointer",
-                padding: 4,
-              }}
-            >
+            <span>{notice.text}</span>
+            <button aria-label="关闭提示" onClick={() => setNotice(null)} type="button">
               <X size={16} />
             </button>
           </div>
@@ -191,6 +185,7 @@ export default function App() {
         {activeModule === "data" && (
           <DataModule
             datasets={dataState.datasets}
+            onNotify={notify}
             uploadDataset={dataState.uploadDataset}
           />
         )}
@@ -225,6 +220,7 @@ export default function App() {
           <RunModule
             contexts={projects.contexts}
             createRun={createRun}
+            onNotify={notify}
             onCancel={runStream.cancelRun}
             datasets={dataState.datasets}
             generatedCodeExecution={models.generatedCodeExecution}
@@ -256,6 +252,7 @@ export default function App() {
             activeArtifact={artifacts.activeArtifact}
             activeArtifactId={artifacts.activeArtifactId}
             onOpenRun={openHistoricalRun}
+            onNotify={notify}
             run={runStream.run}
             selectedProjectId={projects.selectedProjectId}
             setActiveArtifactId={artifacts.setActiveArtifactId}

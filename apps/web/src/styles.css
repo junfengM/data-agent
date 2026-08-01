@@ -581,3 +581,70 @@ textarea {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* ── App-wide notices (toast) ─────────────────────────────── */
+.app-notice {
+  align-items: center;
+  animation: app-notice-in 180ms ease-out;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  color: #ffffff;
+  display: flex;
+  font-size: 13px;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+}
+
+.app-notice button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.app-notice--error {
+  background: #dc2626;
+}
+
+.app-notice--success {
+  background: #16a34a;
+}
+
+@keyframes app-notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Run composer guidance ────────────────────────────────── */
+.run-hint {
+  color: #7a8699;
+  font-size: 12px;
+  margin: 8px 2px 0;
+}
+
+/* ── Empty states with secondary hint ─────────────────────── */
+.empty-state-hint {
+  color: #7a8699;
+  font-size: 12px;
+  margin: 6px 0 0;
+}
+
+/* ── Keyboard focus visibility ────────────────────────────── */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}

@@ -5,7 +5,8 @@ import { EmptyState, PanelHeader } from "../shared";
 
 type Props = {
   datasets: Dataset[];
-  uploadDataset: (file: File | null) => Promise<void>;
+  onNotify?: (message: string, kind?: "error" | "success") => void;
+  uploadDataset: (file: File | null) => Promise<boolean>;
 };
 
 export default function DataModule(props: Props) {
@@ -18,7 +19,12 @@ export default function DataModule(props: Props) {
           <span>选择本地 CSV/XLSX 文件</span>
           <input
             accept=".csv,.xlsx,.xls"
-            onChange={(event) => props.uploadDataset(event.target.files?.[0] ?? null)}
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              void props.uploadDataset(file).then((ok) => {
+                if (ok) props.onNotify?.("数据集上传成功。", "success");
+              });
+            }}
             type="file"
           />
         </label>
@@ -35,7 +41,7 @@ export default function DataModule(props: Props) {
               </div>
             ))
           ) : (
-            <EmptyState text="还没有上传数据集。" />
+            <EmptyState text="还没有上传数据集。" hint="选择 CSV/XLSX 文件上传后，即可到「分析运行」开始分析。" />
           )}
         </div>
       </section>

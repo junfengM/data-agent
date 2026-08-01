@@ -160,8 +160,13 @@ export function WidgetHeader({ artifact }: { artifact: Artifact }) {
   );
 }
 
-export function EmptyState({ text }: { text: string }) {
-  return <div className="empty-state">{text}</div>;
+export function EmptyState({ text, hint }: { text: string; hint?: string }) {
+  return (
+    <div className="empty-state">
+      <span>{text}</span>
+      {hint ? <p className="empty-state-hint">{hint}</p> : null}
+    </div>
+  );
 }
 
 export function ArtifactIcon({ type }: { type: string }) {

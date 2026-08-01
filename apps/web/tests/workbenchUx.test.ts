@@ -77,6 +77,39 @@ describe("artifact module split", () => {
   });
 });
 
+describe("interaction friendliness", () => {
+  it("uses non-blocking notices instead of window.alert in run flow", () => {
+    const runModule = readFileSync(
+      resolve(__dirname, "../src/components/RunModule.tsx"),
+      "utf8",
+    );
+    expect(runModule).not.toContain("window.alert(");
+    expect(runModule).toContain("runDisabledReason");
+    expect(runModule).toContain("data-testid=\"run-hint\"");
+  });
+
+  it("wires a shared notice system with success/error variants", () => {
+    const app = readFileSync(resolve(__dirname, "../src/App.tsx"), "utf8");
+    expect(app).toContain("app-notice--");
+    expect(app).toContain('kind: "error" | "success"');
+    expect(app).toContain("onNotify={notify}");
+  });
+
+  it("supports empty-state hint text", () => {
+    const shared = readFileSync(resolve(__dirname, "../src/shared.tsx"), "utf8");
+    expect(shared).toContain("empty-state-hint");
+  });
+
+  it("removes blocking alerts from web report download", () => {
+    const preview = readFileSync(
+      resolve(__dirname, "../src/components/WebReportPreview.tsx"),
+      "utf8",
+    );
+    expect(preview).not.toContain("alert(");
+    expect(preview).toContain("onNotify");
+  });
+});
+
 describe("task replay execution chain", () => {
   it("groups low-level trace events into readable execution phases", () => {
     const chain = buildExecutionChain([

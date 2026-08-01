@@ -30,9 +30,11 @@ export function webReportAssetUrl(
 
 export function WebReportPreviewWidget({
   artifact,
+  onNotify,
   runId,
 }: {
   artifact: Artifact;
+  onNotify?: (message: string, kind?: "error" | "success") => void;
   runId: string;
 }) {
   const assetUrl = webReportAssetUrl(artifact, runId);
@@ -45,7 +47,7 @@ export function WebReportPreviewWidget({
       const blob = await response.blob();
       downloadBlob(blob, `${safeFilename(artifact.title || "web-report")}.html`);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "下载 HTML 失败");
+      onNotify?.(error instanceof Error ? error.message : "下载 HTML 失败", "error");
     }
   }
 

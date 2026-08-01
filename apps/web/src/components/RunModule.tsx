@@ -15,6 +15,7 @@ type Props = {
   contexts: ProjectContext[];
   createRun: () => Promise<void>;
   onCancel?: () => Promise<void> | void;
+  onNotify?: (message: string, kind?: "error" | "success") => void;
   datasets: Dataset[];
   generatedCodeExecution: string;
   isRunning: boolean;
@@ -131,6 +132,14 @@ export default function RunModule(props: Props) {
     if (canRun) return "开始分析";
     return "待配置";
   })();
+  const runDisabledReason = (() => {
+    if (props.isRunning) return "";
+    if (!props.selectedProject) return "需要先选择或创建一个分析项目";
+    if (selectedDatasets.length === 0) return "需要先上传并选择数据集";
+    if (!selectedModel) return "需要先在系统设置中配置模型";
+    if (!isLocalExecutionEnabled) return "需要在 server/.env 开启本地代码执行（local-dev）";
+    return "";
+  })();
   const timelineMessages = buildTimelineMessages({
     isRunning: props.isRunning,
     question: props.question,
@@ -180,17 +189,17 @@ export default function RunModule(props: Props) {
 
   function handleRun() {
     if (!props.selectedProject) {
-      window.alert("请先选择本次运行的分析项目。");
+      props.onNotify?.("请先选择本次运行的分析项目。", "error");
       setOpenSection("project");
       return;
     }
     if (selectedDatasets.length === 0) {
-      window.alert("请先选择本次运行要使用的数据集。");
+      props.onNotify?.("请先选择本次运行要使用的数据集。", "error");
       setOpenSection("datasets");
       return;
     }
     if (!selectedModel) {
-      window.alert("请先选择本次运行使用的模型。");
+      props.onNotify?.("请先选择本次运行使用的模型。", "error");
       setOpenSection("model");
       return;
     }
@@ -282,6 +291,7 @@ export default function RunModule(props: Props) {
               data-testid="run-workflow"
               disabled={props.isRunning || !canRun}
               onClick={handleRun}
+              title={props.isRunning || canRun ? undefined : runDisabledReason}
               type="button"
             >
               <Play size={16} />
@@ -299,6 +309,11 @@ export default function RunModule(props: Props) {
               </button>
             )}
           </div>
+          {!props.isRunning && !canRun && runDisabledReason && (
+            <p className="run-hint" data-testid="run-hint">
+              还差一步：{runDisabledReason}
+            </p>
+          )}
 
           {openSection && (
             <div className="run-menu-popover">
@@ -344,7 +359,7 @@ export default function RunModule(props: Props) {
                           </label>
                         ))
                       ) : (
-                        <EmptyState text="当前项目还没有可用数据集。请先到「数据」页面上传。" />
+                      <EmptyState text="当前项目还没有可用数据集。" hint="上传 CSV/XLSX 文件后即可开始分析。" />
                       )
                     ) : (
                       <EmptyState text="请先选择分析项目。" />

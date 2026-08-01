@@ -17,15 +17,17 @@ export function useDatasets(selectedProjectId: string, onError: (msg: string) =>
       });
   }, [selectedProjectId]);
 
-  async function uploadDataset(file: File | null) {
-    if (!file) return;
+  async function uploadDataset(file: File | null): Promise<boolean> {
+    if (!file) return false;
     try {
       const projectId = selectedProjectId || undefined;
       await apiUpload(file, projectId);
       const nextDatasets = await fetchDatasets(projectId);
       setDatasets(nextDatasets);
+      return true;
     } catch (err) {
       onError(err instanceof Error ? err.message : String(err));
+      return false;
     }
   }
 

@@ -83,6 +83,7 @@ type ArtifactsProps = {
   activeArtifact?: Artifact;
   activeArtifactId: string;
   onOpenRun: (runId: string) => void;
+  onNotify?: (message: string, kind?: "error" | "success") => void;
   run: RunResponse | null;
   selectedProjectId: string;
   setActiveArtifactId: React.Dispatch<React.SetStateAction<string>>;
@@ -161,20 +162,32 @@ export default function ArtifactModule(props: ArtifactsProps) {
       </aside>
       <section className="artifact-stage">
         {isRailCollapsed && <button className="artifact-rail-reopen" onClick={() => setIsRailCollapsed(false)} type="button"><PanelLeftOpen size={16} /> 产物列表</button>}
-        {displayArtifact ? <ArtifactWidget artifact={displayArtifact} runId={props.run?.id} /> : <EmptyState text="请选择一个产物。" />}
+        {displayArtifact ? (
+          <ArtifactWidget artifact={displayArtifact} onNotify={props.onNotify} runId={props.run?.id} />
+        ) : (
+          <EmptyState text="请选择一个产物。" />
+        )}
       </section>
     </div>
   );
 }
 
-export function ArtifactWidget({ artifact, runId }: { artifact: Artifact; runId?: string }) {
+export function ArtifactWidget({
+  artifact,
+  onNotify,
+  runId,
+}: {
+  artifact: Artifact;
+  onNotify?: (message: string, kind?: "error" | "success") => void;
+  runId?: string;
+}) {
   if (artifact.type === "table") return <TableWidget artifact={artifact} />;
   if (artifact.type === "chart") return <ChartWidget artifact={artifact} runId={runId} />;
   if (artifact.type === "run_log") return <RunLogWidget artifact={artifact} />;
   if (artifact.type === "markdown_report") return <ReportWidget artifact={artifact} />;
-  if (artifact.type === "html_report" || artifact.type === "notebook") return <FileArtifactWidget artifact={artifact} runId={runId} />;
+  if (artifact.type === "html_report" || artifact.type === "notebook") return <FileArtifactWidget artifact={artifact} onNotify={onNotify} runId={runId} />;
   if (artifact.type === "structured_report") return <StructuredReportWidget artifact={artifact} runId={runId} />;
-  if (artifact.type === "visual_report") return <ManifestReportWidget artifact={artifact} runId={runId} />;
+  if (artifact.type === "visual_report") return <ManifestReportWidget artifact={artifact} onNotify={onNotify} runId={runId} />;
   return <ReportWidget artifact={artifact} />;
 }
 
@@ -214,7 +227,15 @@ function ReportBlock({ block, runId }: { block: { type: string; data: Record<str
 
 type ReportViewMode = "reading" | "evidence" | "audit";
 
-export function ManifestReportWidget({ artifact, runId }: { artifact: Artifact; runId?: string }) {
+export function ManifestReportWidget({
+  artifact,
+  onNotify,
+  runId,
+}: {
+  artifact: Artifact;
+  onNotify?: (message: string, kind?: "error" | "success") => void;
+  runId?: string;
+}) {
   const exportSurfaceRef = React.useRef<HTMLElement | null>(null);
   const [viewMode, setViewMode] = React.useState<ReportViewMode>("reading");
   const rawManifest = artifact.data?.manifest as Record<string, unknown> | undefined;
@@ -236,8 +257,12 @@ export function ManifestReportWidget({ artifact, runId }: { artifact: Artifact; 
   async function handleDownloadPackage() {
     if (!runId) return;
     const response = await apiFetch(`/api/runs/${runId}/export`);
-    if (!response.ok) return alert("导出失败");
+    if (!response.ok) {
+      onNotify?.("导出失败，请稍后重试。", "error");
+      return;
+    }
     downloadBlob(await response.blob(), `artifact-package-${runId.slice(0, 8)}.json`);
+    onNotify?.("导出包已生成。", "success");
   }
 
   function handleDownloadHtml() {
@@ -254,7 +279,7 @@ export function ManifestReportWidget({ artifact, runId }: { artifact: Artifact; 
       if (!blob) throw new Error("浏览器没有生成图片文件。");
       downloadBlob(blob, `${safeFilename(manifestTitle)}.png`);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "导出图片失败");
+      onNotify?.(error instanceof Error ? error.message : "导出图片失败", "error");
     }
   }
 
@@ -524,9 +549,17 @@ function RunLogWidget({ artifact }: { artifact: Artifact }) {
   return <article className="artifact-widget"><WidgetHeader artifact={artifact} />{validationResults.length > 0 && <ValidationGate results={validationResults} passed={validationPassed} />}{candidateAngles.length > 0 && <CandidateAnglePanel angles={candidateAngles} />}<WorkflowList steps={steps} /><div className="tool-call-list">{calls.map((call, index) => <div className="tool-call-row" key={`${call.name}-${index}`}><strong>{call.name}</strong><span>{call.status}</span><p>{call.output_summary || call.input_summary}</p></div>)}</div></article>;
 }
 
-function FileArtifactWidget({ artifact, runId }: { artifact: Artifact; runId?: string }) {
+function FileArtifactWidget({
+  artifact,
+  onNotify,
+  runId,
+}: {
+  artifact: Artifact;
+  onNotify?: (message: string, kind?: "error" | "success") => void;
+  runId?: string;
+}) {
   if (isWebReportArtifact(artifact) && runId) {
-    return <WebReportPreviewWidget artifact={artifact} runId={runId} />;
+    return <WebReportPreviewWidget artifact={artifact} onNotify={onNotify} runId={runId} />;
   }
 
   return <article className="artifact-widget"><WidgetHeader artifact={artifact} /><div className="file-artifact">{artifact.path}</div></article>;
