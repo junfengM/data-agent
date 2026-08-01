@@ -110,6 +110,20 @@ describe("interaction friendliness", () => {
   });
 });
 
+describe("visual identity", () => {
+  it("uses the Data Agent brand name consistently", () => {
+    const app = readFileSync(resolve(__dirname, "../src/App.tsx"), "utf8");
+    expect(app).toContain("Data Agent");
+    expect(app).not.toContain("DataX");
+  });
+
+  it("keeps design tokens aligned with the active light-blue theme", () => {
+    const tokens = readFileSync(resolve(__dirname, "../src/tokens.css"), "utf8");
+    expect(tokens).toContain("--color-primary: #2563eb");
+    expect(tokens).toContain("--color-primary-soft");
+  });
+});
+
 describe("task replay execution chain", () => {
   it("groups low-level trace events into readable execution phases", () => {
     const chain = buildExecutionChain([

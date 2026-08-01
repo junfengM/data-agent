@@ -98,7 +98,7 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand">
           <BarChart3 size={22} />
-          <span>DataX</span>
+          <span>Data Agent</span>
         </div>
 
         <nav className="nav-section" aria-label="主功能">

@@ -271,6 +271,29 @@ body {
   padding: 0 !important;
 }
 
+/* ── Motion & consistency polish ──────────────────────────── */
+.nav-button,
+.project-button,
+.primary-button,
+.secondary-button,
+.ghost-button,
+.run-menu-button,
+.artifact-list button {
+  transition: background-color 150ms ease, border-color 150ms ease,
+    color 150ms ease, box-shadow 150ms ease, transform 150ms ease !important;
+}
+
+.primary-button:hover,
+.secondary-button:hover {
+  transform: translateY(-1px) !important;
+}
+
+.brand span {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
 .report-metric-card {
   background: linear-gradient(135deg, #ffffff, var(--da-primary-soft)) !important;
   border-color: var(--da-primary-border) !important;
