@@ -356,8 +356,59 @@ class MemoryStore:
                 ).fetchall()
         return [RunResponse.model_validate(json.loads(row[0])) for row in rows]
 
+    def list_runs_paginated(
+        self,
+        project_id: str | None = None,
+        *,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[RunResponse]:
+        """List runs with explicit pagination bounds."""
+        limit = max(1, min(int(limit), 500))
+        offset = max(0, int(offset))
+        with self._connect() as conn:
+            if project_id is not None:
+                rows = conn.execute(
+                    "select payload from runs where project_id = ? "
+                    "order by created_at desc limit ? offset ?",
+                    (project_id, limit, offset),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "select payload from runs order by created_at desc limit ? offset ?",
+                    (limit, offset),
+                ).fetchall()
+        return [RunResponse.model_validate(json.loads(row[0])) for row in rows]
+
+    def count_runs(self, project_id: str | None = None) -> int:
+        with self._connect() as conn:
+            if project_id is not None:
+                row = conn.execute(
+                    "select count(*) from runs where project_id = ?",
+                    (project_id,),
+                ).fetchone()
+            else:
+                row = conn.execute("select count(*) from runs").fetchone()
+        return int(row[0]) if row else 0
+
+    def delete_run(self, run_id: str) -> bool:
+        """Delete a run and its persisted events. Returns True if the run existed."""
+        with self._connect() as conn:
+            conn.execute("delete from run_events where run_id = ?", (run_id,))
+            cursor = conn.execute("delete from runs where id = ?", (run_id,))
+        return cursor.rowcount > 0
+
     def _connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path)
+        # NOTE: foreign_keys stays OFF on purpose — run/project lifecycle does not
+        # cascade yet, and enabling it would reject runs referencing archived
+        # projects. Enable together with a formal migration/cascade design.
+        conn.execute("PRAGMA busy_timeout = 5000")
+        try:
+            conn.execute("PRAGMA journal_mode = WAL")
+        except sqlite3.Error:
+            pass
+        return conn
 
     @staticmethod
     def _dataset_from_row(row: tuple) -> DatasetRecord:

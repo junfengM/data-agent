@@ -554,30 +554,17 @@ export function webReportAssetUrl(artifact: Pick<Artifact, "path">, runId?: stri
 }
 
 function WebReportPreviewWidget({ artifact, runId }: { artifact: Artifact; runId: string }) {
-  const iframeRef = React.useRef<HTMLIFrameElement | null>(null);
-  const [isExporting, setIsExporting] = React.useState(false);
   const assetUrl = webReportAssetUrl(artifact, runId);
 
-  async function handleDownloadImage() {
-    const doc = iframeRef.current?.contentDocument;
-    const node = doc?.body ?? doc?.documentElement;
-    if (!node) {
-      alert("报告还没有加载完成，稍后再导出图片。");
-      return;
-    }
-    setIsExporting(true);
+  async function handleDownloadHtml() {
+    if (!assetUrl) return;
     try {
-      const blob = await toBlob(node as HTMLElement, {
-        backgroundColor: "#ffffff",
-        cacheBust: true,
-        pixelRatio: 2,
-      });
-      if (!blob) throw new Error("浏览器没有生成图片文件。");
-      downloadBlob(blob, `${safeFilename(artifact.title || "web-report")}.png`);
+      const response = await apiFetch(assetUrl);
+      if (!response.ok) throw new Error("下载失败");
+      const blob = await response.blob();
+      downloadBlob(blob, `${safeFilename(artifact.title || "web-report")}.html`);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "导出图片失败");
-    } finally {
-      setIsExporting(false);
+      alert(error instanceof Error ? error.message : "下载 HTML 失败");
     }
   }
 
@@ -589,16 +576,15 @@ function WebReportPreviewWidget({ artifact, runId }: { artifact: Artifact; runId
     <article className="artifact-widget web-report-widget">
       <div className="report-actionbar web-report-actionbar">
         <WidgetHeader artifact={artifact} />
-        <button className="ghost-button export-button" disabled={isExporting} onClick={handleDownloadImage} type="button">
-          <Image size={16} /> {isExporting ? "导出中" : "导出为图片"}
+        <button className="ghost-button export-button" onClick={handleDownloadHtml} type="button">
+          <FileCode size={16} /> 下载 HTML
         </button>
       </div>
       <div className="web-report-preview-shell">
         <iframe
           className="web-report-preview-frame"
           loading="lazy"
-          ref={iframeRef}
-          sandbox="allow-scripts allow-same-origin"
+          sandbox="allow-scripts"
           src={assetUrl}
           title={artifact.title || "网页版报告"}
         />

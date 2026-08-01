@@ -44,8 +44,10 @@
 - **DA-OPT-013 — Partial**：Web CI 固定 Bun 版本，新增 Desktop CI（构建、测试、`npm audit`）；Ruff/mypy 门禁与工具链固定仍待实现。
 - **DA-OPT-001 — Partial**：分析代码执行改为异步子进程（`run_analysis_code_async`），子进程独立进程组，超时/取消会终止整个进程组；新增 `POST /api/runs/{run_id}/cancel` 与前端“取消”按钮；SSE 断开取消会同步终止分析子进程。Quarto 渲染已改为 `asyncio.to_thread` 避免阻塞事件循环，但 Quarto 子进程级取消尚未覆盖。
 - **DA-OPT-005 — Partial**：新增 `analysis_max_total_output_bytes` 总输出发现上限；子进程应用 POSIX rlimit（CPU、文件大小、FD 数、地址空间、进程数）；运行后文件清理与真正沙箱后端仍未实现。
+- **DA-OPT-009 — Fixed**：Web Report iframe 移除 `allow-same-origin`（`sandbox="allow-scripts"`），同源 DOM/存储不再可被生成 HTML 访问；“导出为图片”改为“下载 HTML”；文件图表 iframe 保持 `allow-scripts`；资产端点 CSP 维持 `connect-src 'none'`。
+- **DA-OPT-010 — Partial**：`GET /api/runs` 支持 `limit`/`offset` 分页；新增 `DELETE /api/runs/{run_id}`（运行中任务返回 409，删除数据库行、事件与 artifacts 目录）；SQLite 启用 WAL 与 busy_timeout。正式 migration 机制、运行摘要列、UI 删除入口、FK 强制（需级联设计）仍待实现。
 
-其余条目（DA-OPT-009、010、012、014）保持 Open。
+其余条目（DA-OPT-012、014）保持 Open。
 
 ## DA-OPT-001 — 同步子进程阻塞异步服务，缺少可靠取消
 

@@ -47,6 +47,17 @@ describe("historical reports", () => {
   });
 });
 
+describe("web report isolation", () => {
+  it("does not grant same-origin access to generated web report HTML", () => {
+    const module = readFileSync(
+      resolve(__dirname, "../src/components/ArtifactModule.tsx"),
+      "utf8",
+    );
+    expect(module).not.toContain('sandbox="allow-scripts allow-same-origin"');
+    expect(module).toContain("下载 HTML");
+  });
+});
+
 describe("task replay execution chain", () => {
   it("groups low-level trace events into readable execution phases", () => {
     const chain = buildExecutionChain([

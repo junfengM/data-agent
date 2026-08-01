@@ -30,9 +30,13 @@ def _store() -> MemoryStore:
 
 
 @router.get("/runs")
-def list_runs(project_id: str | None = None) -> list[dict[str, Any]]:
-    """List persisted runs with lightweight observability metadata."""
-    runs = _store().list_runs(project_id=project_id)
+def list_runs(
+    project_id: str | None = None,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+) -> list[dict[str, Any]]:
+    """List persisted runs with lightweight observability metadata (paginated)."""
+    runs = _store().list_runs_paginated(project_id=project_id, limit=limit, offset=offset)
     return jsonable_encoder([_run_summary(run) for run in runs])
 
 

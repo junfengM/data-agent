@@ -1,4 +1,6 @@
 from pathlib import Path
+import re
+import shutil
 
 from fastapi import APIRouter, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse
@@ -13,6 +15,8 @@ from app.tools.redaction import redact_local_paths
 from app.tools.visual_reports import find_visual_report_artifact
 
 router = APIRouter()
+
+_SAFE_RUN_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 REPORT_ASSET_MEDIA_TYPES = {
     ".html": "text/html",
@@ -87,6 +91,29 @@ def export_run_package(run_id: str) -> FileResponse:
         filename=filepath.name,
         headers={"Content-Disposition": f'attachment; filename="{filepath.name}"'},
     )
+
+
+@router.delete("/runs/{run_id}")
+def delete_run(run_id: str) -> dict:
+    """Delete a finished run: database row, events, and on-disk artifacts."""
+    if not _SAFE_RUN_ID_RE.fullmatch(run_id):
+        raise HTTPException(status_code=400, detail="Invalid run id")
+
+    from app.agent.run_registry import cancel_run
+
+    if cancel_run(run_id):
+        raise HTTPException(status_code=409, detail="Run is still active; cancel it first")
+
+    settings = get_settings()
+    store = MemoryStore(settings.resolved_sqlite_path)
+    if not store.delete_run(run_id):
+        raise HTTPException(status_code=404, detail="Run not found")
+
+    run_dir = (settings.resolved_workspace_dir / "artifacts" / run_id).resolve()
+    if run_dir.is_relative_to(settings.resolved_workspace_dir.resolve()):
+        shutil.rmtree(run_dir, ignore_errors=True)
+
+    return {"deleted": run_id}
 
 
 @router.get("/runs/{run_id}/web-report-package")
