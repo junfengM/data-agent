@@ -1,0 +1,54 @@
+{
+  "title": "单表数据探索",
+  "report_md": "# 单表数据探索\n\n## 数据概览\n\n主要发现：数据集中 customer_segment 占比最高的是企业客户（45%），其次是个人用户（35%）和小型企业（20%）。\n\n## 结论\n\n企业客户是核心用户群体，建议优先优化企业版功能。",
+  "step_results": [
+    {
+      "name": "探索分析",
+      "description": "对单表进行探索性分析",
+      "code": "import pandas as pd\ndf = pd.read_csv('customers.csv')\nsummary = df['customer_segment'].value_counts()",
+      "status": "completed",
+      "stdout": "探索完成\n",
+      "stderr": "",
+      "returncode": 0,
+      "tables": [
+        {
+          "name": "客户分段统计",
+          "columns": ["customer_segment", "count", "percentage"],
+          "preview": [
+            {"customer_segment": "企业客户", "count": 450, "percentage": 45.0},
+            {"customer_segment": "个人用户", "count": 350, "percentage": 35.0},
+            {"customer_segment": "小型企业", "count": 200, "percentage": 20.0}
+          ],
+          "rows": 3
+        }
+      ],
+      "charts": []
+    }
+  ],
+  "profiles": [
+    {
+      "dataset_id": "ds1",
+      "filename": "customers.csv",
+      "row_count": 1000,
+      "column_count": 3,
+      "columns": [
+        {"name": "customer_id", "dtype": "int64", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 1000},
+        {"name": "customer_segment", "dtype": "object", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 3},
+        {"name": "lifetime_value", "dtype": "float64", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 800}
+      ],
+      "warnings": []
+    }
+  ],
+  "project_contexts": [],
+  "candidate_angles": [],
+  "chart_specs": [],
+  "visual_plan": [],
+  "expected": {
+    "min_blocks": 4,
+    "required_renderer_targets": ["evidence_component"],
+    "markdown_must_contain": ["数据概览", "结论"],
+    "no_dangling_evidence": true,
+    "first_evidence_not_table": false,
+    "appendix_last": true
+  }
+}

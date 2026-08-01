@@ -1,0 +1,37 @@
+# Source category catalog for Data Agent
+# Maps category IDs to metadata: helper skills, labels, and tool-agnostic placeholders
+categories:
+  - id: structured_data
+    label: Structured Data
+    placeholder: "~~structured_data"
+    description: Data warehouses, SQL databases, CSV/Excel files
+    helper_skills: ["$analyze-data-quality"]
+    examples: ["Upload CSV files", "Connect DuckDB", "SQL database"]
+
+  - id: product_analytics
+    label: Product Analytics
+    placeholder: "~~product_analytics"
+    description: Product usage and behavior data
+    helper_skills: ["$metric-diagnostics", "$product-analysis"]
+    examples: ["Event tracking data", "Feature usage metrics", "Funnel data"]
+
+  - id: business_metrics
+    label: Business Metrics
+    placeholder: "~~business_metrics"
+    description: Revenue, cost, and business performance data
+    helper_skills: ["$kpi-reporting", "$design-kpis"]
+    examples: ["Revenue reports", "Cost breakdowns", "P&L data"]
+
+  - id: user_research
+    label: User Research
+    placeholder: "~~user_research"
+    description: Qualitative user feedback, surveys, interviews
+    helper_skills: ["$product-analysis"]
+    examples: ["Survey results", "Interview transcripts", "NPS data"]
+
+  - id: market_data
+    label: Market Data
+    placeholder: "~~market_data"
+    description: External market reports, competitor data, industry benchmarks
+    helper_skills: ["$market-sizing"]
+    examples: ["Industry reports", "Competitor analysis", "Census data"]

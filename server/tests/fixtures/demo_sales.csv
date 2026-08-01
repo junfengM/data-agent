@@ -1,0 +1,10 @@
+month,product,category,revenue,orders
+2024-01,Product A,Electronics,120000,45
+2024-02,Product A,Electronics,135000,52
+2024-03,Product A,Electronics,148000,58
+2024-01,Product B,Clothing,85000,120
+2024-02,Product B,Clothing,92000,135
+2024-03,Product B,Clothing,88000,128
+2024-01,Product C,Food,65000,200
+2024-02,Product C,Food,72000,215
+2024-03,Product C,Food,78000,230

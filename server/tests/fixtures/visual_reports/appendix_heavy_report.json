@@ -1,0 +1,173 @@
+{
+  "title": "多维分析报告（附录繁重）",
+  "report_md": "# 多维分析报告\n\n## 核心发现\n\n整体营收增长稳健，但利润端承压。主要利润贡献来自A产品线和华东区域。\n\n## 建议\n\n1. 优化低利润产品线的成本结构\n2. 加大高利润区域的资源投入",
+  "step_results": [
+    {
+      "name": "利润分析",
+      "description": "多维利润分析",
+      "code": "import pandas as pd\ndf = pd.read_csv('finance.csv')\nprofit = df.groupby(['product', 'region']).agg({'revenue': 'sum', 'cost': 'sum', 'profit': 'sum'})",
+      "status": "completed",
+      "stdout": "分析完成\n",
+      "stderr": "",
+      "returncode": 0,
+      "tables": [
+        {
+          "name": "产品利润表",
+          "columns": ["product", "revenue", "cost", "profit", "margin"],
+          "preview": [
+            {"product": "A产品", "revenue": 500, "cost": 300, "profit": 200, "margin": 40.0},
+            {"product": "B产品", "revenue": 300, "cost": 250, "profit": 50, "margin": 16.7}
+          ],
+          "rows": 2
+        },
+        {
+          "name": "区域利润表",
+          "columns": ["region", "revenue", "cost", "profit", "margin"],
+          "preview": [
+            {"region": "华东", "revenue": 350, "cost": 200, "profit": 150, "margin": 42.9},
+            {"region": "华南", "revenue": 250, "cost": 180, "profit": 70, "margin": 28.0}
+          ],
+          "rows": 2
+        },
+        {
+          "name": "费用明细表",
+          "columns": ["category", "amount", "budget", "variance"],
+          "preview": [
+            {"category": "人力成本", "amount": 200, "budget": 180, "variance": 20},
+            {"category": "营销费用", "amount": 100, "budget": 90, "variance": 10}
+          ],
+          "rows": 2
+        },
+        {
+          "name": "月度趋势表",
+          "columns": ["month", "revenue", "cost", "profit"],
+          "preview": [
+            {"month": "2025-01", "revenue": 150, "cost": 100, "profit": 50},
+            {"month": "2025-02", "revenue": 160, "cost": 105, "profit": 55}
+          ],
+          "rows": 6
+        },
+        {
+          "name": "raw_data",
+          "columns": ["date", "transaction_id", "amount", "product", "region"],
+          "preview": [
+            {"date": "2025-01-01", "transaction_id": "T001", "amount": 100, "product": "A产品", "region": "华东"}
+          ],
+          "rows": 200
+        }
+      ],
+      "charts": [
+        {
+          "name": "利润趋势图",
+          "type": "line",
+          "x": "month",
+          "y": "profit",
+          "columns": ["month", "revenue", "cost", "profit"],
+          "preview": [
+            {"month": "2025-01", "profit": 50},
+            {"month": "2025-02", "profit": 55}
+          ]
+        },
+        {
+          "name": "产品利润对比",
+          "type": "bar",
+          "x": "product",
+          "y": "profit",
+          "columns": ["product", "profit"],
+          "preview": [
+            {"product": "A产品", "profit": 200},
+            {"product": "B产品", "profit": 50}
+          ]
+        },
+        {
+          "name": "区域利润占比",
+          "type": "pie",
+          "columns": ["region", "profit"],
+          "preview": [
+            {"region": "华东", "profit": 150},
+            {"region": "华南", "profit": 70}
+          ]
+        },
+        {
+          "name": "成本结构分析",
+          "type": "stackedBar",
+          "x": "month",
+          "y": "cost",
+          "columns": ["month", "cost", "category"],
+          "preview": [
+            {"month": "2025-01", "cost": 100, "category": "人力"},
+            {"month": "2025-02", "cost": 105, "category": "人力"}
+          ]
+        },
+        {
+          "name": "季度预测",
+          "type": "line",
+          "x": "quarter",
+          "y": "forecast",
+          "columns": ["quarter", "forecast", "actual"],
+          "preview": [
+            {"quarter": "Q3", "forecast": 500, "actual": null}
+          ]
+        }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "dataset_id": "ds1",
+      "filename": "finance.csv",
+      "row_count": 500,
+      "column_count": 6,
+      "columns": [
+        {"name": "month", "dtype": "object", "non_null_count": 500, "null_count": 0, "null_pct": 0.0, "unique_count": 6},
+        {"name": "product", "dtype": "object", "non_null_count": 500, "null_count": 0, "null_pct": 0.0, "unique_count": 5},
+        {"name": "region", "dtype": "object", "non_null_count": 500, "null_count": 0, "null_pct": 0.0, "unique_count": 4},
+        {"name": "revenue", "dtype": "float64", "non_null_count": 500, "null_count": 0, "null_pct": 0.0, "unique_count": 400},
+        {"name": "cost", "dtype": "float64", "non_null_count": 500, "null_count": 0, "null_pct": 0.0, "unique_count": 400},
+        {"name": "profit", "dtype": "float64", "non_null_count": 500, "null_count": 0, "null_pct": 0.0, "unique_count": 400}
+      ],
+      "warnings": []
+    }
+  ],
+  "project_contexts": [],
+  "candidate_angles": [
+    {
+      "id": "angle_profit",
+      "question": "产品线利润结构分析",
+      "dimensions": ["product"],
+      "measures": ["revenue", "cost", "profit", "margin"],
+      "expected_evidence": "产品利润对比表与利润趋势图",
+      "impact_score": 0.85,
+      "confidence_score": 0.9,
+      "actionability_score": 0.75,
+      "novelty_score": 0.2,
+      "relevance_score": 0.9,
+      "data_sufficiency_score": 0.85,
+      "selected": true
+    }
+  ],
+  "chart_specs": [
+    {
+      "chart_type": "line",
+      "title": "利润趋势图",
+      "x_field": "month",
+      "y_fields": ["profit"]
+    },
+    {
+      "chart_type": "bar",
+      "title": "产品利润对比",
+      "x_field": "product",
+      "y_fields": ["profit"]
+    }
+  ],
+  "visual_plan": [],
+  "expected": {
+    "min_blocks": 10,
+    "required_renderer_targets": ["md_visual", "evidence_component", "appendix"],
+    "markdown_must_contain": ["核心发现", "建议"],
+    "no_dangling_evidence": true,
+    "first_evidence_not_table": true,
+    "appendix_last": true,
+    "appendix_min_blocks": 2
+  }
+}

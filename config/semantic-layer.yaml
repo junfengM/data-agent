@@ -1,0 +1,188 @@
+# Semantic Layer Schema
+# Defines canonical metrics, dimensions, sources, and reusable query patterns.
+# Each analysis project can have its own semantic-layer.yaml.
+
+# Source precedence and authority
+source_precedence:
+  # Define which sources control the answer when multiple exist
+  # Higher priority sources override lower priority ones
+  priority_order:
+    - live_query    # Fresh data from warehouse/database
+    - dashboard     # BI dashboard with known refresh schedule
+    - notebook      # Reproducible analysis with code
+    - document      # Source-of-truth documentation
+    - cached        # Previously computed results
+    - manual        # Manually provided data
+
+  # Conflict resolution rules
+  conflict_resolution:
+    - rule: prefer_live_over_cached
+      description: Live queries override cached results when both exist
+    - rule: prefer_documented_definitions
+      description: Documented metric definitions override informal sources
+    - rule: note_disagreements
+      description: When sources disagree, note the disagreement and explain which is authoritative
+
+# Validation rules for semantic layer
+validation:
+  metrics:
+    - rule: must_have_formula
+      description: Every metric must have a calculation formula
+    - rule: must_have_grain
+      description: Every metric must specify its grain (daily, weekly, etc.)
+    - rule: must_have_dimensions
+      description: Every metric must list applicable dimensions
+    - rule: must_have_sources
+      description: Every metric must reference source tables/columns
+
+  dimensions:
+    - rule: must_have_type
+      description: Every dimension must specify its data type
+    - rule: must_have_values_or_range
+      description: Categorical dimensions must list valid values or date ranges
+
+  sources:
+    - rule: must_have_path_or_query
+      description: Every source must have a file path or query definition
+    - rule: must_have_grain
+      description: Every source must specify its grain (one row per X)
+    - rule: must_have_columns
+      description: Every source must list its columns with types
+
+# Refresh strategy
+refresh:
+  # How often to check for source updates
+  check_interval: daily
+
+  # Sources that require manual refresh
+  manual_refresh:
+    - type: csv_upload
+      reason: User must re-upload updated files
+    - type: manual_entry
+      reason: User must provide new data
+
+  # Sources that can be auto-refreshed
+  auto_refresh:
+    - type: database_query
+      method: re_execute_query
+    - type: api_endpoint
+      method: fetch_latest
+
+# Canonical metric definitions
+metrics: []
+  # Example:
+  # - id: revenue
+  #   name: Revenue
+  #   description: Total revenue from completed orders
+  #   formula: SUM(order_amount) WHERE status = 'completed'
+  #   unit: currency
+  #   grain: daily
+  #   dimensions: [date, product_category, region]
+  #   sources:
+  #     - table: orders
+  #       column: order_amount
+  #       filter: status = 'completed'
+  #   caveats:
+  #     - Refunds not included in this metric
+  #     - Currency conversion uses daily rate
+
+# Dimension definitions
+dimensions: []
+  # Example:
+  # - id: date
+  #   name: Date
+  #   type: date
+  #   grain: [daily, weekly, monthly, quarterly, yearly]
+  #   description: Calendar date of the event
+  #
+  # - id: product_category
+  #   name: Product Category
+  #   type: string
+  #   values: [electronics, clothing, food, home, other]
+  #   description: Top-level product classification
+  #
+  # - id: region
+  #   name: Region
+  #   type: string
+  #   values: [north, south, east, west]
+  #   description: Geographic region of the customer
+
+# Source table/file definitions
+sources: []
+  # Example:
+  # - id: orders
+  #   name: Orders Table
+  #   type: table
+  #   path: data/orders.csv
+  #   primary_key: order_id
+  #   columns:
+  #     - name: order_id
+  #       type: string
+  #       description: Unique order identifier
+  #     - name: order_amount
+  #       type: float
+  #       description: Order total in local currency
+  #     - name: status
+  #       type: string
+  #       values: [pending, completed, refunded, cancelled]
+  #     - name: order_date
+  #       type: date
+  #       description: Date the order was placed
+  #   grain: one row per order
+  #   update_frequency: daily
+  #   caveats:
+  #     - Orders with status='test' should be excluded
+
+# Filter definitions
+filters: []
+  # Example:
+  # - id: completed_orders
+  #   name: Completed Orders
+  #   description: Only orders with status = 'completed'
+  #   condition: status = 'completed'
+  #   applies_to: [orders]
+
+# Join definitions
+joins: []
+  # Example:
+  # - id: orders_to_customers
+  #   name: Orders to Customers
+  #   left: orders
+  #   right: customers
+  #   type: left
+  #   on: orders.customer_id = customers.customer_id
+  #   description: Join orders to customer master data
+
+# Known data issues and caveats
+caveats: []
+  # Example:
+  # - id: missing_regions
+  #   name: Missing Region Data
+  #   severity: warning
+  #   description: ~5% of orders have NULL region field
+  #   affected_metrics: [revenue_by_region]
+  #   workaround: Use 'Unknown' as default region
+  #
+  # - id: currency_conversion
+  #   name: Currency Conversion Lag
+  #   severity: info
+  #   description: Currency rates are updated daily at 00:00 UTC
+  #   affected_metrics: [revenue]
+  #   workaround: None required for daily analysis
+
+# Reusable query/code patterns
+patterns: []
+  # Example:
+  # - id: daily_revenue_trend
+  #   name: Daily Revenue Trend
+  #   description: Calculate daily revenue with 7-day moving average
+  #   code: |
+  #     import pandas as pd
+  #     df = pd.read_csv(orders_path)
+  #     df['order_date'] = pd.to_datetime(df['order_date'])
+  #     daily = df.groupby('order_date')['order_amount'].sum().reset_index()
+  #     daily['ma_7d'] = daily['order_amount'].rolling(7).mean()
+  #   inputs: [orders_path]
+  #   outputs: [daily_df]
+  #   metrics: [revenue]
+  #   dimensions: [date]

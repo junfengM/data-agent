@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# audit-semantic-layer — 审计所有 project 的 semantic-layer.yaml
+#
+# 用法: ./scripts/audit-semantic-layer
+#
+# 输出每个 project 的 metric 总数、duplicate / conflicting / near_duplicate 数量、
+# 具体 metric name、formula、aggregation、grain、sources。
+# 不自动修复，不写文件。
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# Discover Python: prefer project venv
+VENV_PYTHON="$REPO_ROOT/server/.venv/bin/python"
+PYTHON="${VENV_PYTHON}"
+if [ ! -x "$PYTHON" ]; then
+    PYTHON="python3"
+fi
+
+exec env REPO_ROOT="$REPO_ROOT" "$PYTHON" - "$@" <<'PYEOF'
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+import yaml
+
+# Read REPO_ROOT from shell-exported environment
+REPO_ROOT = Path(os.environ["REPO_ROOT"])
+sys.path.insert(0, str(REPO_ROOT / "server"))
+
+from app.tools.semantic_validation import detect_semantic_ambiguities
+
+
+def audit_project(project_path: Path) -> dict | None:
+    layer_path = project_path / "semantic-layer.yaml"
+    if not layer_path.exists():
+        return None
+
+    try:
+        layer = yaml.safe_load(layer_path.read_text(encoding="utf-8")) or {}
+    except Exception as exc:
+        return {"project": project_path.name, "error": str(exc)}
+
+    if not isinstance(layer, dict):
+        return {"project": project_path.name, "error": "semantic-layer.yaml is not a dict"}
+
+    metrics = layer.get("metrics", [])
+    if not isinstance(metrics, list):
+        metrics = []
+
+    ambiguities = detect_semantic_ambiguities(metrics)
+
+    duplicate = [a for a in ambiguities if a.conflict_type == "duplicate_name"]
+    conflicting = [a for a in ambiguities if a.conflict_type in (
+        "conflicting_formula", "conflicting_aggregation", "conflicting_grain", "conflicting_source"
+    )]
+    near_dup = [a for a in ambiguities if a.conflict_type == "near_duplicate"]
+
+    return {
+        "project": project_path.name,
+        "metrics_total": len(metrics),
+        "duplicate_name": len(duplicate),
+        "conflicting": len(conflicting),
+        "near_duplicate": len(near_dup),
+        "ambiguities": [
+            {
+                "name": a.metric_name,
+                "type": a.conflict_type,
+                "description": a.description,
+                "details": {
+                    k: v for k, v in a.details.items()
+                    if k in ("formulas", "aggregations", "grains", "sources", "count", "names", "base_name", "indices")
+                },
+            }
+            for a in ambiguities
+        ],
+        "metrics_detail": [
+            {
+                "name": m.get("name", ""),
+                "formula": m.get("formula", ""),
+                "aggregation": m.get("aggregation", ""),
+                "grain": m.get("grain", ""),
+                "sources": m.get("sources", []),
+                "source_column": m.get("source_column", ""),
+                "source_dataset": m.get("source_dataset", ""),
+                "source_table": m.get("source_table", ""),
+            }
+            for m in metrics
+        ],
+    }
+
+
+def main() -> None:
+    projects_dir = REPO_ROOT / "workspace" / "projects"
+    if not projects_dir.exists():
+        print("No workspace/projects directory found.")
+        sys.exit(0)
+
+    results = []
+    for project_path in sorted(projects_dir.iterdir()):
+        if not project_path.is_dir():
+            continue
+        result = audit_project(project_path)
+        if result is None:
+            continue
+        results.append(result)
+
+    if not results:
+        print("No semantic-layer.yaml files found in workspace/projects/")
+        sys.exit(0)
+
+    print("=" * 72)
+    print("  Semantic Layer Audit")
+    print("=" * 72)
+    total_metrics = sum(r.get("metrics_total", 0) for r in results)
+    total_dup = sum(r.get("duplicate_name", 0) for r in results)
+    total_conf = sum(r.get("conflicting", 0) for r in results)
+    total_near = sum(r.get("near_duplicate", 0) for r in results)
+    print(f"\n  Projects scanned: {len(results)}")
+    print(f"  Total metrics:    {total_metrics}")
+    print(f"  Duplicates:       {total_dup}")
+    print(f"  Conflicts:        {total_conf}")
+    print(f"  Near-duplicates:  {total_near}")
+    print()
+
+    for result in results:
+        print("-" * 72)
+        print(f"  Project: {result['project']}")
+        if "error" in result:
+            print(f"    ERROR: {result['error']}")
+            continue
+        print(f"    Metrics: {result['metrics_total']}  "
+              f"| Duplicates: {result['duplicate_name']}  "
+              f"| Conflicts: {result['conflicting']}  "
+              f"| Near-duplicates: {result['near_duplicate']}")
+
+        for amb in result["ambiguities"]:
+            print(f"    [{amb['type']}] {amb['name']}")
+            print(f"      {amb['description']}")
+            if amb["details"]:
+                for k, v in amb["details"].items():
+                    print(f"      {k}: {v}")
+        print()
+
+
+if __name__ == "__main__":
+    main()
+PYEOF

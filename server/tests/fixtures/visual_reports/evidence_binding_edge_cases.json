@@ -1,0 +1,84 @@
+{
+  "title": "证据绑定边界测试",
+  "report_md": "# 证据绑定边界测试报告\n\n## 概述\n\n本测试验证证据绑定在边界条件下的行为。\n\n## 含证据段落\n\n华东地区营收表现优异，具体数据见下方。\n\n## 无证据段落\n\n这是一个没有任何数据支持的描述性段落，仅包含定性分析。\n\n## 多证据段落\n\n产品A和产品B的利润对比显示，产品A的利润率为40%，而产品B仅为16.7%。区域维度上，华东区域利润率为42.9%领先。\n\n## 结论\n\n综合来看，产品A和华东区域是主要的利润来源，建议持续投入。",
+  "step_results": [
+    {
+      "name": "多维度分析",
+      "description": "分析产品、区域利润数据",
+      "code": "import pandas as pd\ndf = pd.read_csv('data.csv')\nprofit = df.groupby(['product', 'region']).agg({'profit': 'sum', 'margin': 'mean'})",
+      "status": "completed",
+      "stdout": "",
+      "stderr": "",
+      "returncode": 0,
+      "tables": [
+        {
+          "name": "产品利润表",
+          "columns": ["product", "profit", "margin"],
+          "preview": [
+            {"product": "产品A", "profit": 200, "margin": 40.0},
+            {"product": "产品B", "profit": 50, "margin": 16.7}
+          ],
+          "rows": 2
+        },
+        {
+          "name": "区域利润表",
+          "columns": ["region", "profit", "margin"],
+          "preview": [
+            {"region": "华东", "profit": 150, "margin": 42.9},
+            {"region": "华南", "profit": 70, "margin": 28.0}
+          ],
+          "rows": 2
+        }
+      ],
+      "charts": [
+        {
+          "name": "产品利润对比",
+          "type": "bar",
+          "x": "product",
+          "y": "profit",
+          "columns": ["product", "profit"],
+          "preview": [
+            {"product": "产品A", "profit": 200},
+            {"product": "产品B", "profit": 50}
+          ]
+        }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "dataset_id": "ds1",
+      "filename": "data.csv",
+      "row_count": 100,
+      "column_count": 5,
+      "columns": [
+        {"name": "product", "dtype": "object", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 5},
+        {"name": "region", "dtype": "object", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 4},
+        {"name": "profit", "dtype": "float64", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 80},
+        {"name": "margin", "dtype": "float64", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 80},
+        {"name": "revenue", "dtype": "float64", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 80}
+      ],
+      "warnings": []
+    }
+  ],
+  "project_contexts": [],
+  "candidate_angles": [],
+  "chart_specs": [
+    {
+      "chart_type": "bar",
+      "title": "产品利润对比",
+      "x_field": "product",
+      "y_fields": ["profit"]
+    }
+  ],
+  "visual_plan": [],
+  "expected": {
+    "min_blocks": 5,
+    "required_renderer_targets": ["evidence_component"],
+    "markdown_must_contain": ["概述", "含证据段落", "无证据段落", "多证据段落"],
+    "no_dangling_evidence": true,
+    "first_evidence_not_table": false,
+    "appendix_last": true,
+    "no_fallback_evidence_binding": true
+  }
+}

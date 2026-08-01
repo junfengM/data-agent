@@ -1,0 +1,35 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.egg-info/
+
+# Frontend
+apps/web/node_modules/
+apps/web/dist/
+apps/web/*.tsbuildinfo
+apps/desktop/node_modules/
+apps/desktop/build/
+apps/desktop/bun.lock
+apps/desktop/release/
+apps/desktop/out/
+apps/desktop/*.tsbuildinfo
+
+# Local runtime state
+workspace/
+config/models.yaml
+
+# Managed runtimes (Quarto, etc.)
+.cache/
+
+# Environment
+.env
+.env.*
+!.env.example
+*.log

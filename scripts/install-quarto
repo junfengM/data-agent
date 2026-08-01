@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# install-quarto — Download and install a managed Quarto CLI under ~/.cache/data-agent/quarto/
+#
+# Usage:
+#   ./scripts/install-quarto [VERSION]
+#
+# Default version: 1.9.38
+#
+# Requirements: curl, tar, shasum (or sha256sum)
+#
+# This script never writes into git-tracked directories.
+# Do not run this automatically from app startup.
+
+readonly VERSION="${1:-1.9.38}"
+readonly INSTALL_BASE="${HOME}/.cache/data-agent/quarto"
+readonly INSTALL_DIR="${INSTALL_BASE}/${VERSION}"
+readonly QUARTO_BIN="${INSTALL_DIR}/bin/quarto"
+
+# Platform detection
+detect_platform() {
+    local os arch
+    os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+    arch="$(uname -m)"
+
+    case "${os}" in
+        darwin) os="macos" ;;
+        linux)  os="linux" ;;
+        *)
+            echo "ERROR: Unsupported OS: ${os}" >&2
+            exit 1
+            ;;
+    esac
+
+    case "${arch}" in
+        x86_64|amd64) arch="amd64" ;;
+        arm64|aarch64) arch="arm64" ;;
+        *)
+            echo "ERROR: Unsupported architecture: ${arch}" >&2
+            exit 1
+            ;;
+    esac
+
+    echo "${os}-${arch}"
+}
+
+PLATFORM="$(detect_platform)"
+
+case "${PLATFORM}" in
+  linux-amd64)
+    ASSET="quarto-${VERSION}-linux-amd64.tar.gz"
+    ;;
+  linux-arm64)
+    ASSET="quarto-${VERSION}-linux-arm64.tar.gz"
+    ;;
+  macos-amd64|macos-arm64)
+    ASSET="quarto-${VERSION}-macos.tar.gz"
+    ;;
+  *)
+    echo "ERROR: Unsupported platform: ${PLATFORM}" >&2
+    exit 1
+    ;;
+esac
+
+readonly ASSET
+readonly CHECKSUM_FILE="quarto-${VERSION}-checksums.txt"
+readonly BASE_URL="https://github.com/quarto-dev/quarto-cli/releases/download/v${VERSION}"
+
+echo "==> Platform: ${PLATFORM}"
+echo "==> Version:  ${VERSION}"
+echo "==> Install:  ${INSTALL_DIR}"
+
+# Skip if already installed at the target version
+if [[ -x "${QUARTO_BIN}" ]]; then
+    installed_ver="$("${QUARTO_BIN}" --version 2>/dev/null | head -1 || true)"
+    if echo "${installed_ver}" | grep -qF "${VERSION}"; then
+        echo "==> Quarto ${VERSION} already installed at ${QUARTO_BIN}"
+        echo "==> Binary path: ${QUARTO_BIN}"
+        echo "==> Set DATA_AGENT_QUARTO_BIN=${QUARTO_BIN} to use this install."
+        exit 0
+    fi
+fi
+
+# Prepare temp work dir
+WORKDIR="$(mktemp -d)"
+trap 'rm -rf "${WORKDIR}"' EXIT
+
+echo "==> Downloading checksums..."
+curl -fsSL "${BASE_URL}/${CHECKSUM_FILE}" -o "${WORKDIR}/${CHECKSUM_FILE}"
+
+echo "==> Downloading ${ASSET}..."
+curl -fsSL "${BASE_URL}/${ASSET}" -o "${WORKDIR}/${ASSET}"
+
+echo "==> Verifying checksum..."
+cd "${WORKDIR}"
+
+expected="$(grep " ${ASSET}$" "${WORKDIR}/${CHECKSUM_FILE}" | awk '{print $1}')"
+if [[ -z "${expected}" ]]; then
+  echo "ERROR: checksum for ${ASSET} not found in ${CHECKSUM_FILE}" >&2
+  exit 1
+fi
+
+if command -v shasum >/dev/null 2>&1; then
+  actual="$(shasum -a 256 "${WORKDIR}/${ASSET}" | awk '{print $1}')"
+elif command -v sha256sum >/dev/null 2>&1; then
+  actual="$(sha256sum "${WORKDIR}/${ASSET}" | awk '{print $1}')"
+else
+  echo "ERROR: shasum or sha256sum required" >&2
+  exit 1
+fi
+
+if [[ "${actual}" != "${expected}" ]]; then
+  echo "ERROR: checksum mismatch for ${ASSET}" >&2
+  echo "expected: ${expected}" >&2
+  echo "actual:   ${actual}" >&2
+  exit 1
+fi
+
+echo "==> Checksum OK"
+
+echo "==> Extracting to ${INSTALL_DIR}..."
+rm -rf "${INSTALL_DIR}"
+mkdir -p "${INSTALL_DIR}"
+tar -xzf "${ASSET}" -C "${INSTALL_DIR}" --strip-components=1
+
+# Verify the binary is executable
+if [[ ! -x "${QUARTO_BIN}" ]]; then
+    echo "ERROR: Quarto binary not found or not executable at ${QUARTO_BIN}" >&2
+    exit 1
+fi
+
+echo ""
+echo "==> Quarto ${VERSION} installed successfully."
+echo "==> Binary path: ${QUARTO_BIN}"
+echo ""
+echo "To use this install, set the environment variable:"
+echo "  export DATA_AGENT_QUARTO_BIN=${QUARTO_BIN}"
+echo ""
+echo "Or the runtime detector will find it automatically under the managed path."

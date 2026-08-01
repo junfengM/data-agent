@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Discover the right Python: prefer the project venv, then python3 on PATH.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+VENV_PYTHON="$REPO_ROOT/server/.venv/bin/python"
+
+if [ -x "$VENV_PYTHON" ]; then
+    PYTHON="$VENV_PYTHON"
+elif command -v python3 &>/dev/null; then
+    PYTHON="python3"
+else
+    echo "ERROR: No Python found. Run 'uv venv --python 3.12' in server/ first." >&2
+    exit 1
+fi
+
+echo "=== compileall ==="
+"$PYTHON" -m compileall "$REPO_ROOT/server/app"
+
+echo ""
+echo "=== pytest ==="
+cd "$REPO_ROOT/server" && "$PYTHON" -m pytest "$@"

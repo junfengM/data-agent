@@ -1,0 +1,311 @@
+# Data Agent Manifest
+# Declares agent capabilities, skills, tools, artifact types, execution modes, and validation gates.
+
+agent:
+  name: Data Agent
+  version: 0.1.0
+  description: Local-first, skill-driven data analysis agent workbench
+
+# Supported skills and their roles
+skills:
+  primary:
+    - id: product-analysis
+      name: Product Analysis
+      trigger: General data analysis, recommendations, business decisions
+      artifacts: [structured_report, table, chart, visual_report]
+
+    - id: metric-diagnostics
+      name: Metric Diagnostics
+      trigger: Why a metric moved, regressed, improved, or differs from expectation
+      artifacts: [structured_report, table, chart, visual_report]
+
+    - id: kpi-reporting
+      name: KPI Reporting
+      trigger: Recurring performance updates, scorecards, WBR, MBR, QBR, target pacing
+      artifacts: [structured_report, table, chart, visual_report]
+
+    - id: visualize-data
+      name: Visualize Data
+      trigger: Chart design, chart QA, visual explanation
+      artifacts: [chart]
+
+    - id: build-report
+      name: Build Report
+      trigger: Report generation from analysis evidence
+      artifacts: [structured_report, markdown_report, html_report, visual_report]
+
+    - id: build-dashboard
+      name: Build Dashboard
+      trigger: Reusable monitoring or exploration surface
+      artifacts: [dashboard]
+
+  auxiliary:
+    - id: chart-rules
+      name: Chart Rules
+      trigger: Loaded when primary skill may generate charts
+      depends_on: [product-analysis, metric-diagnostics, kpi-reporting, visualize-data, build-dashboard, build-report]
+
+    - id: user-context
+      name: User Context
+      trigger: Mandatory pre-answer gate for all skills. Manages source routing, semantic layer registry, onboarding.
+      depends_on: [product-analysis, metric-diagnostics, kpi-reporting, visualize-data, build-dashboard, build-report]
+
+    - id: gather-business-context
+      name: Gather Business Context
+      trigger: Load when project context is thin or missing, user switches product area, or analysis needs bounding
+      depends_on: [product-analysis, metric-diagnostics]
+
+    - id: validate-data
+      name: Validate Data
+      trigger: Pre-delivery QA — validates methodology, calculations, conclusions, and evidence before stakeholder handoff
+      depends_on: [product-analysis, metric-diagnostics, kpi-reporting, build-report]
+
+    - id: analyze-data-quality
+      name: Analyze Data Quality
+      trigger: Source trust assessment — freshness, grain, completeness, duplicates, schema drift, outliers
+      depends_on: [product-analysis, metric-diagnostics, kpi-reporting]
+
+    - id: design-kpis
+      name: Design KPIs
+      trigger: KPI framework design, metric definitions, target setting, measurement plans
+      depends_on: [product-analysis, kpi-reporting]
+
+    - id: market-sizing
+      name: Market Sizing
+      trigger: TAM/SAM/SOM, opportunity sizing, revenue potential, sensitivity modeling
+      depends_on: [product-analysis]
+
+    - id: jupyter-notebooks
+      name: Jupyter Notebooks
+      trigger: Reproducible analysis notebooks for SQL/Python, audit trails, exploratory work
+      depends_on: [product-analysis, metric-diagnostics, build-report]
+
+# Deterministic tools available to the agent
+tools:
+  - id: dataset_profiler
+    name: Dataset Profiler
+    description: Profile CSV/Excel datasets for schema, nulls, distributions
+    inputs: [dataset_path]
+    outputs: [profile_json]
+
+  - id: python_executor
+    name: Python Executor
+    description: Execute LLM-generated Python code in controlled environment
+    inputs: [code, run_dir, dataset_paths]
+    outputs: [stdout, stderr, tables, charts, generated_files]
+
+  - id: report_writer
+    name: Report Writer
+    description: Write Markdown/HTML reports to artifacts directory
+    inputs: [title, body]
+    outputs: [report_path]
+
+  - id: notebook_writer
+    name: Notebook Writer
+    description: Write Jupyter notebooks with dataset profiles
+    inputs: [title, question, dataset_paths, profiles]
+    outputs: [notebook_path]
+
+# Artifact types the agent can produce
+artifacts:
+  - type: structured_report
+    description: Block-based report with prose, tables, charts, metric cards, callouts, source notes
+    renderable: true
+    exportable: true
+
+  - type: markdown_report
+    description: Flat Markdown report
+    renderable: true
+    exportable: true
+
+  - type: html_report
+    description: HTML report rendered from Markdown
+    renderable: true
+    exportable: true
+
+  - type: notebook
+    description: Jupyter notebook with dataset profiles and analysis
+    renderable: false
+    exportable: true
+
+  - type: table
+    description: Structured table with columns and rows
+    renderable: true
+    exportable: false
+
+  - type: chart
+    description: Chart artifact (Recharts widget or file-based PNG/HTML)
+    renderable: true
+    exportable: false
+
+  - type: dashboard
+    description: Multi-widget dashboard layout
+    renderable: true
+    exportable: true
+
+  - type: run_log
+    description: Workflow steps and tool calls log
+    renderable: true
+    exportable: false
+
+  - type: visual_report
+    description: Primary visual analysis report with manifest, snapshot, charts, tables, cards, sources, and evidence map
+    renderable: true
+    exportable: true
+
+# Execution mode configuration
+execution:
+  modes:
+    - id: disabled
+      name: Disabled
+      description: Generated code does not execute (default, safe)
+      default: true
+
+    - id: local-dev
+      name: Local Dev
+      description: Code runs in a local development subprocess with scrubbed env
+      requires_ack: true
+
+  safety:
+    env_scrubbing: true
+    run_dir_only_output: true
+    no_network_isolation: warning
+
+# Validation gates that must pass before delivery
+validation_gates:
+  - id: evidence_coverage
+    name: Evidence Coverage
+    description: Every key claim maps to table/chart evidence
+
+  - id: source_metadata
+    name: Source Metadata
+    description: Tables/charts have source file and row count
+
+  - id: schema_compliance
+    name: Schema Compliance
+    description: Report blocks satisfy ReportBlock schema
+
+  - id: chart_contracts
+    name: Chart Contracts
+    description: Chart types follow chart-rules skill
+
+  - id: context_caveats
+    name: Context Caveats
+    description: Missing context and data quality issues are surfaced
+
+  - id: renderability
+    name: Renderability
+    description: Generated artifacts can render or expose useful fallback
+
+# Semantic layer capabilities
+semantic_layer:
+  enabled: true
+  schema_path: config/semantic-layer.yaml
+  supports:
+    - canonical_metrics
+    - dimensions_and_grains
+    - source_tables
+    - filters_and_joins
+    - caveats_and_known_issues
+    - reusable_query_patterns
+  management:
+    - setup
+    - refresh
+    - inspection
+    - repair
+
+# Project context and preflight
+project_context:
+  enabled: true
+  kinds:
+    - business_context
+    - metric_definition
+    - reporting_preference
+    - known_data_issue
+    - audience
+  preflight_envelope: true
+
+# Source routing preferences
+source_routing:
+  enabled: true
+  config_path: config/source-category-config.yaml
+  categories:
+    - id: structured_data
+      name: Structured Data
+      description: Data warehouses, SQL databases, CSV/Excel files
+      options: [prefer, avoid, neutral]
+
+    - id: team_communication
+      name: Team Communication
+      description: Slack, Teams, email
+      options: [prefer, avoid, neutral]
+
+    - id: company_docs
+      name: Company Docs
+      description: Notion, Google Drive, SharePoint
+      options: [prefer, avoid, neutral]
+
+    - id: product_analytics
+      name: Product Analytics
+      description: Amplitude, Mixpanel, Statsig
+      options: [prefer, avoid, neutral]
+
+# Onboarding flow
+onboarding:
+  enabled: true
+  steps:
+    - id: welcome
+      name: Welcome
+      description: Introduce Data Agent capabilities
+
+    - id: source_setup
+      name: Source Setup
+      description: Confirm data sources and connectivity
+
+    - id: semantic_layer_setup
+      name: Semantic Layer Setup
+      description: Create or import semantic layer
+
+    - id: hero_prompt
+      name: Hero Prompt
+      description: Run first analysis workflow
+
+  hero_prompts:
+    - id: product_analysis
+      skill: product-analysis
+      prompt: "Analyze activation and recommend where the team should focus next"
+
+    - id: metric_diagnostics
+      skill: metric-diagnostics
+      prompt: "Diagnose why weekly active users dropped last week"
+
+    - id: kpi_reporting
+      skill: kpi-reporting
+      prompt: "Turn this month's metrics into a leadership-ready operating update"
+
+# Report delivery modes
+delivery_modes:
+  - id: structured_report
+    name: Structured Report
+    description: Block-based report with prose, tables, charts (default)
+    default: true
+
+  - id: markdown
+    name: Markdown
+    description: Flat Markdown report
+
+  - id: html
+    name: HTML
+    description: Portable HTML report with embedded charts
+
+  - id: pdf
+    name: PDF
+    description: Static PDF export (future)
+
+  - id: google_docs
+    name: Google Docs
+    description: Convert to Google Docs (future)
+
+  - id: google_slides
+    name: Google Slides
+    description: Convert to Google Slides (future)

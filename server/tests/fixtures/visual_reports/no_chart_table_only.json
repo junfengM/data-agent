@@ -1,0 +1,55 @@
+{
+  "title": "纯表格分析报告",
+  "report_md": "# 纯表格分析报告\n\n## 数据汇总\n\n以下表格汇总了各部门的季度预算执行情况。\n\n## 预算执行详情\n\n各部门预算执行率整体良好，平均执行率达到 92%。\n\n## 建议\n\n建议对预算执行率低于 80% 的部门进行专项审计。",
+  "step_results": [
+    {
+      "name": "预算汇总",
+      "description": "汇总各部门预算执行数据",
+      "code": "import pandas as pd\ndf = pd.read_csv('budget.csv')\nsummary = df.groupby('department').agg({'budget': 'sum', 'spent': 'sum'})",
+      "status": "completed",
+      "stdout": "汇总完成\n",
+      "stderr": "",
+      "returncode": 0,
+      "tables": [
+        {
+          "name": "部门预算执行表",
+          "columns": ["department", "budget", "spent", "execution_rate"],
+          "preview": [
+            {"department": "研发部", "budget": 500, "spent": 480, "execution_rate": 96.0},
+            {"department": "市场部", "budget": 300, "spent": 270, "execution_rate": 90.0},
+            {"department": "销售部", "budget": 400, "spent": 380, "execution_rate": 95.0}
+          ],
+          "rows": 3
+        }
+      ],
+      "charts": []
+    }
+  ],
+  "profiles": [
+    {
+      "dataset_id": "ds1",
+      "filename": "budget.csv",
+      "row_count": 100,
+      "column_count": 4,
+      "columns": [
+        {"name": "department", "dtype": "object", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 3},
+        {"name": "budget", "dtype": "float64", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 50},
+        {"name": "spent", "dtype": "float64", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 50},
+        {"name": "month", "dtype": "object", "non_null_count": 100, "null_count": 0, "null_pct": 0.0, "unique_count": 6}
+      ],
+      "warnings": []
+    }
+  ],
+  "project_contexts": [],
+  "candidate_angles": [],
+  "chart_specs": [],
+  "visual_plan": [],
+  "expected": {
+    "min_blocks": 4,
+    "required_renderer_targets": ["evidence_component"],
+    "markdown_must_contain": ["数据汇总", "建议"],
+    "no_dangling_evidence": true,
+    "first_evidence_not_table": false,
+    "appendix_last": true
+  }
+}

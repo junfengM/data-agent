@@ -1,0 +1,163 @@
+# Skill routing configuration.
+# - routes: deterministic keyword → skill_id mapping (fallback when LLM unavailable)
+# - template_aliases: skill_id → template name overrides (when skill name ≠ template name)
+#
+# Each route must reference an existing skill markdown file in the skills/ directory.
+# Each template_aliases value must reference an existing .md file in the templates/ directory.
+
+routes:
+  - skill: metric-diagnostics
+    triggers:
+      - 下降
+      - 上升
+      - 变化
+      - 减少
+      - 增长
+      - 降低
+      - 提高
+      - why did
+      - why has
+      - what caused
+      - root cause
+      - 驱动因素
+      - 归因
+      - 下钻
+      - 细分
+      - 降了
+      - 涨了
+      - 变动
+      - 下降了
+  - skill: kpi-reporting
+    triggers:
+      - 周报
+      - 月报
+      - 季报
+      - 年报
+      - WBR
+      - MBR
+      - QBR
+      - 双周报
+      - 复盘
+      - scorecard
+      - 目标达成
+      - 进度
+      - KPI报告
+    template: kpi-report
+  - skill: build-dashboard
+    triggers:
+      - 仪表盘
+      - 看板
+      - dashboard
+      - 大屏
+      - 数据看板
+      - 监控面板
+    template: dashboard-summary
+  - skill: market-sizing
+    triggers:
+      - 市场规模
+      - 市场容量
+      - TAM
+      - SAM
+      - SOM
+      - 机会规模
+      - market sizing
+      - market size
+      - 机会评估
+      - 市场空间
+      - 市场
+      - 规模
+  - skill: analyze-data-quality
+    triggers:
+      - 数据质量
+      - 脏数据
+      - 缺失值
+      - 异常值
+      - 空值
+      - 数据校验
+      - 完整性
+      - 准确性
+      - 一致性
+      - data quality
+      - 数据健康
+      - 数据源
+  - skill: build-report
+    triggers:
+      - 生成报告
+      - 输出报告
+      - 写份报告
+      - 写报告
+      - build report
+      - 分析报告
+      - 报告
+    template: executive-summary
+  - skill: visualize-data
+    triggers:
+      - 可视化
+      - 画图
+      - 趋势图
+      - 图表
+      - chart
+      - plot
+      - 柱状图
+      - 折线图
+      - 饼图
+    template: executive-summary
+  - skill: design-kpis
+    triggers:
+      - KPI定义
+      - 指标定义
+      - 指标体系
+      - 指标设计
+      - define kpi
+      - metric definition
+      - 设计指标
+      - 建立指标
+  - skill: jupyter-notebooks
+    triggers:
+      - 笔记本
+      - jupyter
+      - notebook
+      - 可复现
+      - 交互分析
+  - skill: gather-business-context
+    triggers:
+      - 业务背景
+      - 业务上下文
+      - 了解业务
+      - gather context
+      - business context
+      - 行业数据
+      - 竞品
+  - skill: explore-data
+    triggers:
+      - 自由洞察
+      - 有什么发现
+      - 有什么规律
+      - 数据探索
+      - find insights
+      - what stands out
+      - explore data
+      - insight discovery
+      - 明细数据
+      - 明细分析
+      - 探索性分析
+      - 探索分析
+  - skill: product-analysis
+    triggers:
+      - 产品分析
+      - 业务分析
+      - 业务决策
+      - product analysis
+      - 建议
+      - 推荐
+      - 发现
+      - 洞察
+      - 分析一下
+
+template_aliases:
+  kpi-reporting: kpi-report
+  build-dashboard: dashboard-summary
+  build-report: executive-summary
+  visualize-data: executive-summary
+
+default_skill: product-analysis

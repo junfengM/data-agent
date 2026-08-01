@@ -1,0 +1,47 @@
+{
+  "name": "data-agent-desktop",
+  "version": "0.1.0",
+  "description": "macOS desktop shell for the local-first Data Agent workbench",
+  "author": "mjf",
+  "private": true,
+  "type": "module",
+  "main": "build/main.js",
+  "scripts": {
+    "test": "bun test",
+    "build:web": "cd ../web && bun run build",
+    "build": "tsc -p tsconfig.json",
+    "start": "bun run build && electron .",
+    "dist:mac": "bun run build:web && bun run build && electron-builder --mac"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "electron": "41.7.1",
+    "electron-builder": "26.15.3",
+    "typescript": "5.7.2"
+  },
+  "build": {
+    "appId": "local.data-agent.desktop",
+    "productName": "Data Agent",
+    "files": [
+      "build/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "web-dist"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "dir",
+        "dmg"
+      ]
+    }
+  }
+}

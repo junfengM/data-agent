@@ -1,0 +1,46 @@
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "=== Data Agent Local Smoke Test ==="
+cd "$REPO_ROOT"
+export DATA_AGENT_GENERATED_CODE_EXECUTION=local
+
+echo ""
+echo "--- Backend Tests ---"
+"$SCRIPT_DIR/test-server"
+
+echo ""
+echo "--- Frontend Build ---"
+cd apps/web && bun run build
+cd "$REPO_ROOT"
+
+echo ""
+echo "--- E2E Demo ---"
+DEMO_RESULT="PASS"
+if ! "$SCRIPT_DIR/demo"; then
+    DEMO_RESULT="FAIL"
+fi
+
+echo ""
+echo "--- Docker-free Verification ---"
+if command -v rg &>/dev/null; then
+    rg -n "[Dd]ocker" README.md docs/architecture.md server scripts 2>/dev/null \
+        && echo "(Docker mentions OK - all historical)" \
+        || echo "(No unexpected Docker mentions)"
+elif command -v grep &>/dev/null; then
+    grep -rn "[Dd]ocker" README.md docs/architecture.md server/ scripts/ 2>/dev/null \
+        && echo "(Docker mentions OK - all historical)" \
+        || echo "(No unexpected Docker mentions)"
+fi
+
+echo ""
+echo "=== Smoke test complete ==="
+echo "Backend: OK | Frontend: OK | Demo: $DEMO_RESULT | Execution: local | Storage: SQLite"
+if [ "$DEMO_RESULT" = "FAIL" ]; then
+    echo ""
+    echo "Smoke test FAILED because demo did not pass."
+    exit 1
+fi

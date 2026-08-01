@@ -1,0 +1,102 @@
+{
+  "title": "月销售经营分析报告",
+  "report_md": "# 月销售经营分析报告\n\n## 核心结论\n\n本月营收同比增长 12%，主因高端产品线贡献提升。华东地区表现最为突出，贡献总营收 35%。\n\n建议：加大高端产品线投入，继续深耕华东市场。\n\n## 各品类表现\n\nA品类营收 120 万元，环比增长 8%；B品类营收 85 万元，环比持平；C品类营收 60 万元，环比下降 3%。品类结构保持健康。\n\n## 区域分析\n\n华东营收 140 万元，华南营收 110 万元，华北营收 80 万元，西部营收 70 万元。\n\n## 趋势展望\n\n基于近 6 个月数据，预计下月营收将继续保持 10% 左右增长。需关注 C品类下滑趋势。\n\n## 风险提示\n\nC品类连续两月下滑，需分析具体原因并制定应对方案。",
+  "step_results": [
+    {
+      "name": "数据聚合",
+      "description": "按月、品类、区域聚合销售数据",
+      "code": "import pandas as pd\ndf = pd.read_csv('sales.csv')\nmonthly = df.groupby(['month', 'category', 'region']).agg({'revenue': 'sum', 'orders': 'sum'}).reset_index()",
+      "status": "completed",
+      "stdout": "聚合完成，共 48 行数据\n",
+      "stderr": "",
+      "returncode": 0,
+      "tables": [
+        {
+          "name": "月品类营收汇总",
+          "columns": ["month", "category", "revenue", "orders", "growth_pct"],
+          "preview": [
+            {"month": "2025-01", "category": "A", "revenue": 120, "orders": 240, "growth_pct": 8.0},
+            {"month": "2025-01", "category": "B", "revenue": 85, "orders": 170, "growth_pct": 0.0},
+            {"month": "2025-01", "category": "C", "revenue": 60, "orders": 120, "growth_pct": -3.0}
+          ],
+          "rows": 48
+        },
+        {
+          "name": "区域营收分布",
+          "columns": ["region", "revenue", "share_pct"],
+          "preview": [
+            {"region": "华东", "revenue": 140, "share_pct": 35.0},
+            {"region": "华南", "revenue": 110, "share_pct": 27.5},
+            {"region": "华北", "revenue": 80, "share_pct": 20.0},
+            {"region": "西部", "revenue": 70, "share_pct": 17.5}
+          ],
+          "rows": 4
+        }
+      ],
+      "charts": [
+        {
+          "name": "月度营收趋势",
+          "type": "line",
+          "x": "month",
+          "y": "revenue",
+          "columns": ["month", "revenue", "category"],
+          "preview": [
+            {"month": "2025-01", "category": "A", "revenue": 120},
+            {"month": "2025-02", "category": "A", "revenue": 130}
+          ]
+        }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "dataset_id": "ds1",
+      "filename": "sales.csv",
+      "row_count": 1000,
+      "column_count": 5,
+      "columns": [
+        {"name": "month", "dtype": "object", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 6},
+        {"name": "category", "dtype": "object", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 3},
+        {"name": "region", "dtype": "object", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 4},
+        {"name": "revenue", "dtype": "float64", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 800},
+        {"name": "orders", "dtype": "int64", "non_null_count": 1000, "null_count": 0, "null_pct": 0.0, "unique_count": 500}
+      ],
+      "warnings": []
+    }
+  ],
+  "project_contexts": [],
+  "candidate_angles": [
+    {
+      "id": "angle_001",
+      "question": "高端产品线对营收增长的贡献分析",
+      "dimensions": ["category"],
+      "measures": ["revenue", "growth_pct"],
+      "expected_evidence": "品类营收对比表与趋势图",
+      "impact_score": 0.9,
+      "confidence_score": 0.85,
+      "actionability_score": 0.8,
+      "novelty_score": 0.3,
+      "relevance_score": 0.95,
+      "data_sufficiency_score": 0.9,
+      "selected": true
+    }
+  ],
+  "chart_specs": [
+    {
+      "chart_type": "line",
+      "title": "月度营收趋势",
+      "x_field": "month",
+      "y_fields": ["revenue"],
+      "color_field": "category"
+    }
+  ],
+  "visual_plan": [],
+  "expected": {
+    "min_blocks": 8,
+    "required_renderer_targets": ["md_visual", "evidence_component", "appendix"],
+    "markdown_must_contain": ["核心结论", "建议"],
+    "no_dangling_evidence": true,
+    "first_evidence_not_table": true,
+    "appendix_last": true
+  }
+}
