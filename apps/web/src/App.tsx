@@ -225,6 +225,7 @@ export default function App() {
           <RunModule
             contexts={projects.contexts}
             createRun={createRun}
+            onCancel={runStream.cancelRun}
             datasets={dataState.datasets}
             generatedCodeExecution={models.generatedCodeExecution}
             isRunning={runStream.isRunning}

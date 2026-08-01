@@ -15,6 +15,7 @@ export {
   streamRun,
   fetchRun,
   fetchRuns,
+  cancelRun,
   readStreamingRun,
   selectedContextsToMarkdown,
 } from "./runs";

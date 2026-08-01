@@ -35,4 +35,11 @@ describe("analysis run menu layout", () => {
     expect(runModule).not.toContain('openSection === "mode"');
     expect(runModule).not.toContain("runModeOptions");
   });
+
+  it("exposes a cancel action while a run is in progress", () => {
+    expect(runModule).toContain('data-testid="cancel-run"');
+    expect(runModule).toContain("onCancel");
+    const app = readFileSync(resolve(__dirname, "../src/App.tsx"), "utf8");
+    expect(app).toContain("onCancel={runStream.cancelRun}");
+  });
 });

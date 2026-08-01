@@ -611,7 +611,8 @@ class AgentOrchestrator:
         # Web Report artifact (post-Markdown delivery rendering).
         # Failure here must NOT affect run status — wrapped in try/except.
         try:
-            web_artifact = write_web_report_artifact(
+            web_artifact = await asyncio.to_thread(
+                write_web_report_artifact,
                 run_id=run.id,
                 report_md=report_md,
                 manifest=manifest.model_dump(mode="json") if hasattr(manifest, "model_dump") else None,

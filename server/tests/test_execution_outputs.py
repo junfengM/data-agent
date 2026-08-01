@@ -36,6 +36,24 @@ def test_collect_output_candidates_skips_oversized_files(tmp_path, monkeypatch):
     mock_settings = MagicMock()
     mock_settings.analysis_max_output_bytes = small.stat().st_size
     mock_settings.analysis_max_output_files = 999
+    mock_settings.analysis_max_total_output_bytes = 10**12
     monkeypatch.setattr("app.tools.execution.get_settings", lambda: mock_settings)
 
     assert _collect_output_candidates(run_dir) == {small.resolve()}
+
+
+def test_collect_output_candidates_respects_total_budget(tmp_path, monkeypatch):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    first = run_dir / "first.csv"
+    second = run_dir / "second.csv"
+    first.write_text("id\n1\n", encoding="utf-8")
+    second.write_text("id\n2\n", encoding="utf-8")
+
+    mock_settings = MagicMock()
+    mock_settings.analysis_max_output_bytes = 10**9
+    mock_settings.analysis_max_output_files = 999
+    mock_settings.analysis_max_total_output_bytes = first.stat().st_size
+    monkeypatch.setattr("app.tools.execution.get_settings", lambda: mock_settings)
+
+    assert _collect_output_candidates(run_dir) == {first.resolve()}

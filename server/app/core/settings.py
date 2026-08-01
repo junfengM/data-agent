@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     analysis_execution_timeout_seconds: int = 600
     analysis_max_output_files: int = 500
     analysis_max_output_bytes: int = 200 * 1024 * 1024
+    analysis_max_total_output_bytes: int = 1024 * 1024 * 1024
 
     model_config = SettingsConfigDict(env_prefix="DATA_AGENT_", env_file=".env", extra="ignore")
 

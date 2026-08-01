@@ -7,7 +7,7 @@ from typing import Any
 from app.core.settings import get_settings
 from app.models.schemas import Artifact, ArtifactType, RunEventType, RunResponse, ToolCall
 from app.tools.chart_contract import FILE_CHART_TYPES
-from app.tools.execution import run_analysis_code
+from app.tools.execution import run_analysis_code_async
 from app.tools.redaction import redact_local_paths, safe_file_artifact_ref
 
 # ---------------------------------------------------------------------------
@@ -46,7 +46,7 @@ def create_execute_step(
             f"\u5f00\u59cb\u6267\u884c\u5206\u6790\u4ee3\u7801\uff1a{step_name}\u3002",
             step_name=step_name,
         )
-        result = run_analysis_code(
+        result = await run_analysis_code_async(
             code=code,
             run_dir=run_dir,
             dataset_paths=dataset_paths,

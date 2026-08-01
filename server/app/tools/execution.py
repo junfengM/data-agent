@@ -22,11 +22,13 @@ local development execution.
 from __future__ import annotations
 
 import ast
+import asyncio
 import importlib
 import json
 import keyword
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import sysconfig
@@ -35,6 +37,8 @@ from pathlib import Path
 from typing import Protocol
 
 from app.core.settings import get_settings
+
+_POSIX = hasattr(os, "fork")
 
 
 def safe_growth_rate(current: float, previous: float | None) -> float | None:
@@ -239,6 +243,127 @@ class LocalDevRunner:
             )
 
 
+class LocalDevRunnerAsync:
+    """Async local subprocess runner with process-group isolation.
+
+    The child runs in its own session (process group) so cancellation and
+    timeouts can terminate the whole group instead of leaving orphan
+    subprocesses. POSIX resource limits are applied in the child before exec.
+    """
+
+    async def run(
+        self,
+        script_path: Path,
+        run_dir: Path,
+        timeout_seconds: int | None,
+    ) -> subprocess.CompletedProcess:
+        kwargs: dict[str, object] = {
+            "cwd": str(run_dir),
+            "env": _scrubbed_env(run_dir),
+            "stdout": asyncio.subprocess.PIPE,
+            "stderr": asyncio.subprocess.PIPE,
+        }
+        if _POSIX:
+            kwargs["start_new_session"] = True
+            kwargs["preexec_fn"] = _make_child_rlimit_preexec(
+                timeout_seconds=timeout_seconds,
+                fsize_bytes=get_settings().analysis_max_output_bytes,
+            )
+
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                sys.executable, str(script_path), **kwargs
+            )
+        except Exception as exc:
+            return subprocess.CompletedProcess(
+                args=[sys.executable, str(script_path)],
+                returncode=2,
+                stdout="",
+                stderr=f"Failed to launch analysis subprocess: {exc}",
+            )
+
+        args = [sys.executable, str(script_path)]
+        try:
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                proc.communicate(), timeout=timeout_seconds
+            )
+            return subprocess.CompletedProcess(
+                args=args,
+                returncode=proc.returncode,
+                stdout=stdout_bytes.decode(errors="replace") if stdout_bytes else "",
+                stderr=stderr_bytes.decode(errors="replace") if stderr_bytes else "",
+            )
+        except asyncio.TimeoutError:
+            _kill_process_group(proc.pid)
+            await _drain_process(proc)
+            return subprocess.CompletedProcess(
+                args=args,
+                returncode=124,
+                stdout="",
+                stderr=(
+                    f"\nAnalysis step timed out after {timeout_seconds} seconds."
+                ).strip(),
+            )
+        except asyncio.CancelledError:
+            _kill_process_group(proc.pid)
+            await _drain_process(proc)
+            raise
+
+
+def _make_child_rlimit_preexec(
+    timeout_seconds: int | None,
+    fsize_bytes: int,
+):
+    """Return a preexec function that caps child OS resources (POSIX only)."""
+    cpu_seconds = (timeout_seconds or 0) + 30
+    address_space_bytes = 16 * 1024 * 1024 * 1024
+
+    def apply_limits() -> None:
+        try:
+            import resource
+
+            limits = [
+                (resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds)),
+                (resource.RLIMIT_FSIZE, (fsize_bytes, fsize_bytes)),
+                (resource.RLIMIT_NOFILE, (512, 512)),
+                (resource.RLIMIT_AS, (address_space_bytes, address_space_bytes)),
+                (resource.RLIMIT_NPROC, (64, 64)),
+            ]
+            for rlimit_type, (soft, hard) in limits:
+                try:
+                    resource.setrlimit(rlimit_type, (soft, hard))
+                except (ValueError, OSError):
+                    # Non-root users may not raise hard limits; skip those.
+                    continue
+        except Exception:
+            pass
+
+    return apply_limits
+
+
+def _kill_process_group(pid: int) -> None:
+    if not _POSIX or pid <= 0:
+        return
+    try:
+        os.killpg(pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+
+async def _drain_process(proc: asyncio.subprocess.Process) -> None:
+    """Reap a killed process without hanging on a runaway pipe."""
+    try:
+        await asyncio.wait_for(proc.communicate(), timeout=5)
+    except Exception:
+        try:
+            proc.kill()
+        except Exception:
+            pass
+
+
 class SandboxRunner:
     """Placeholder for sandbox execution.
 
@@ -328,7 +453,80 @@ def run_analysis_code(
         )
 
     # local-dev mode
+    script_path, files_before = _prepare_execution(code, run_dir, dataset_paths)
     runner = LocalDevRunner()
+    result = runner.run(script_path, run_dir, timeout_seconds)
+    return _finish_execution(result, run_dir, files_before, script_path)
+
+
+async def run_analysis_code_async(
+    code: str,
+    run_dir: Path,
+    dataset_paths: list[Path],
+    *,
+    timeout_seconds: int | None = None,
+    generated_code_execution: str = "disabled",
+) -> ExecutionResult:
+    """Async variant of ``run_analysis_code`` with process-group cancellation.
+
+    The subprocess runs in its own session; cancelling the awaiting task kills
+    the whole process group before the CancelledError propagates.
+    """
+    mode = _normalize_mode(generated_code_execution)
+    if timeout_seconds is None:
+        timeout_seconds = get_settings().analysis_execution_timeout_seconds
+
+    if mode == "disabled":
+        return ExecutionResult(
+            returncode=2,
+            stdout="",
+            stderr=(
+                "Generated code execution is disabled. "
+                "Set DATA_AGENT_GENERATED_CODE_EXECUTION=local-dev in server/.env "
+                "to enable local development execution."
+            ),
+            tables=[],
+            charts=[],
+            generated_files=[],
+        )
+
+    if mode == "sandbox":
+        return ExecutionResult(
+            returncode=2,
+            stdout="",
+            stderr=(
+                "Sandbox execution is configured but no sandbox backend is available. "
+                "Set DATA_AGENT_GENERATED_CODE_EXECUTION=local-dev for development "
+                "or implement a sandbox backend."
+            ),
+            tables=[],
+            charts=[],
+            generated_files=[],
+        )
+
+    import_error = _validate_imports(code)
+    if import_error:
+        return ExecutionResult(
+            returncode=2,
+            stdout="",
+            stderr=import_error,
+            tables=[],
+            charts=[],
+            generated_files=[],
+        )
+
+    script_path, files_before = _prepare_execution(code, run_dir, dataset_paths)
+    runner = LocalDevRunnerAsync()
+    result = await runner.run(script_path, run_dir, timeout_seconds)
+    return _finish_execution(result, run_dir, files_before, script_path)
+
+
+def _prepare_execution(
+    code: str,
+    run_dir: Path,
+    dataset_paths: list[Path],
+) -> tuple[Path, set[Path]]:
+    """Copy datasets, wrap code, and snapshot pre-run outputs."""
     run_dir.mkdir(parents=True, exist_ok=True)
     datasets_dir = run_dir / "datasets"
     datasets_dir.mkdir(exist_ok=True)
@@ -346,9 +544,16 @@ def run_analysis_code(
     wrapped_code = _wrap_code(code, dataset_var_lines, run_dir)
     script_path = run_dir / "_analysis_step.py"
     script_path.write_text(wrapped_code, encoding="utf-8")
+    return script_path, files_before
 
-    result = runner.run(script_path, run_dir, timeout_seconds)
 
+def _finish_execution(
+    result: subprocess.CompletedProcess,
+    run_dir: Path,
+    files_before: set[Path],
+    script_path: Path,
+) -> ExecutionResult:
+    """Classify outputs and build the final ExecutionResult."""
     # Persist stdout/stderr alongside the script for post-run debugging.
     if result.stdout:
         (run_dir / "_stdout.txt").write_text(result.stdout, encoding="utf-8")
@@ -513,6 +718,8 @@ def _collect_output_candidates(run_dir: Path) -> set[Path]:
     resolved_run_dir = run_dir.resolve()
     ignored_roots = {resolved_run_dir / "datasets", resolved_run_dir / "_home"}
     candidates: set[Path] = set()
+    total_bytes = 0
+    max_total_bytes = get_settings().analysis_max_total_output_bytes
 
     for path in sorted(run_dir.rglob("*")):
         if len(candidates) >= get_settings().analysis_max_output_files:
@@ -535,11 +742,15 @@ def _collect_output_candidates(run_dir: Path) -> set[Path]:
                 continue
             if path.suffix.lower() not in OUTPUT_EXTENSIONS:
                 continue
-            if resolved_path.stat().st_size > get_settings().analysis_max_output_bytes:
+            size = resolved_path.stat().st_size
+            if size > get_settings().analysis_max_output_bytes:
+                continue
+            if total_bytes + size > max_total_bytes:
                 continue
         except OSError:
             continue
         candidates.add(resolved_path)
+        total_bytes += size
 
     return candidates
 

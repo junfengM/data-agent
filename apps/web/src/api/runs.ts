@@ -108,6 +108,12 @@ export function fetchRun(runId: string, projectId?: string): Promise<RunResponse
   return requestJson<RunResponse>(`/api/runs/${runId}${query}`);
 }
 
+export function cancelRun(runId: string): Promise<{ run_id: string; status: string }> {
+  return requestJson(`/api/runs/${encodeURIComponent(runId)}/cancel`, {
+    method: "POST",
+  });
+}
+
 export function fetchRuns(projectId?: string): Promise<RunSummary[]> {
   const query = projectId ? `?project_id=${encodeURIComponent(projectId)}` : "";
   return requestJson<RunSummary[]>(`/api/runs${query}`);

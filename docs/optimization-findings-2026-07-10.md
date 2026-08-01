@@ -42,8 +42,10 @@
 - **DA-OPT-011 — Fixed（默认安全）**：Prompt 快照默认不再持久化，需显式设置 `DATA_AGENT_TRACE_PERSIST_PROMPT_SNAPSHOTS=true`。
 - **DA-OPT-006 — Partial**：新增 `planner_max_code_executions` 执行预算，达到上限后移除 `execute_code`/`save_semantic_finding`；Token/费用/时间总预算仍待实现。
 - **DA-OPT-013 — Partial**：Web CI 固定 Bun 版本，新增 Desktop CI（构建、测试、`npm audit`）；Ruff/mypy 门禁与工具链固定仍待实现。
+- **DA-OPT-001 — Partial**：分析代码执行改为异步子进程（`run_analysis_code_async`），子进程独立进程组，超时/取消会终止整个进程组；新增 `POST /api/runs/{run_id}/cancel` 与前端“取消”按钮；SSE 断开取消会同步终止分析子进程。Quarto 渲染已改为 `asyncio.to_thread` 避免阻塞事件循环，但 Quarto 子进程级取消尚未覆盖。
+- **DA-OPT-005 — Partial**：新增 `analysis_max_total_output_bytes` 总输出发现上限；子进程应用 POSIX rlimit（CPU、文件大小、FD 数、地址空间、进程数）；运行后文件清理与真正沙箱后端仍未实现。
 
-其余条目（DA-OPT-001、005、009、010、012、014）保持 Open。
+其余条目（DA-OPT-009、010、012、014）保持 Open。
 
 ## DA-OPT-001 — 同步子进程阻塞异步服务，缺少可靠取消
 

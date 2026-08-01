@@ -1,5 +1,5 @@
 import React from "react";
-import { Bot, CheckCircle2, ChevronDown, Code2, FileText, Play, UserRound, Wrench } from "lucide-react";
+import { Bot, CheckCircle2, ChevronDown, Code2, FileText, Play, Square, UserRound, Wrench } from "lucide-react";
 import type { AnalysisProject, Artifact, Dataset, ModelConfig, ProjectContext, RunResponse, SemanticLayerMeta, Skill } from "../types";
 import { EmptyState } from "../shared";
 import "../analysis-chat.css";
@@ -14,6 +14,7 @@ export type RunStreamEvent = {
 type Props = {
   contexts: ProjectContext[];
   createRun: () => Promise<void>;
+  onCancel?: () => Promise<void> | void;
   datasets: Dataset[];
   generatedCodeExecution: string;
   isRunning: boolean;
@@ -286,6 +287,17 @@ export default function RunModule(props: Props) {
               <Play size={16} />
               {runButtonLabel}
             </button>
+            {props.isRunning && props.onCancel && (
+              <button
+                className="run-send-button run-cancel-button"
+                data-testid="cancel-run"
+                onClick={() => void props.onCancel?.()}
+                type="button"
+              >
+                <Square size={16} />
+                取消
+              </button>
+            )}
           </div>
 
           {openSection && (

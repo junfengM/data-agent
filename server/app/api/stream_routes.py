@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.agent.orchestrator import AgentOrchestrator
+from app.agent.run_registry import register_run, unregister_run
 from app.core.settings import get_settings
 from app.memory.store import MemoryStore
 from app.models.schemas import AnalysisRequest
@@ -58,6 +59,7 @@ async def stream_run(request: AnalysisRequest) -> StreamingResponse:
                 await queue.put(None)
 
         task = asyncio.create_task(run_task())
+        registered_run_id: str | None = None
         try:
             while True:
                 try:
@@ -72,8 +74,15 @@ async def stream_run(request: AnalysisRequest) -> StreamingResponse:
                     continue
                 if item is None:
                     break
+                if registered_run_id is None:
+                    run_id = item.get("run_id")
+                    if run_id:
+                        registered_run_id = str(run_id)
+                        register_run(registered_run_id, task, orchestrator)
                 yield _sse(item)
         finally:
+            if registered_run_id:
+                unregister_run(registered_run_id)
             if not task.done():
                 task.cancel()
 
@@ -82,3 +91,13 @@ async def stream_run(request: AnalysisRequest) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.post("/runs/{run_id}/cancel")
+async def cancel_run_route(run_id: str) -> dict:
+    """Cancel an in-flight streamed run by cancelling its asyncio task."""
+    from app.agent.run_registry import cancel_run
+
+    if not cancel_run(run_id):
+        raise HTTPException(status_code=404, detail="No active run with this id")
+    return {"run_id": run_id, "status": "cancelled"}
