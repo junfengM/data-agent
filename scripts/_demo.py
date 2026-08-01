@@ -45,7 +45,7 @@ The analysis used 3 months of sales data (Jan-Mar 2024) across 3 product categor
 _MOCK_ANALYSIS_CODE = (
     "import pandas as pd\n"
     "\n"
-    "data_path = eval(dataset_paths[0])\n"
+    "data_path = dataset_paths[0]\n"
     "df = pd.read_csv(data_path)\n"
     "\n"
     "monthly = df.groupby('month')['revenue'].sum().reset_index()\n"
@@ -75,6 +75,7 @@ def _make_mock_planner():
         skill_registry=None,
         code_executor=None,
         finding_saver=None,
+        require_evidence=True,
     ):
         if code_executor:
             await code_executor(
